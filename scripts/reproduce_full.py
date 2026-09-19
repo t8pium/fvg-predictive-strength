@@ -150,6 +150,12 @@ def main(argv: list[str] | None = None) -> int:
     _write_state(state)
 
     for index, stage in enumerate(STAGES):
+        state["current_stage"] = stage.key
+        state["current_stage_number"] = index + 1
+        state["total_stages"] = len(STAGES)
+        _write_state(state)
+        print(f"\n[{index + 1}/{len(STAGES)}] {stage.label}", flush=True)
+
         if index < start_index:
             state["stages"].append(
                 {"key": stage.key, "label": stage.label, "status": "skipped_by_request", "seconds": 0.0}
@@ -196,6 +202,7 @@ def main(argv: list[str] | None = None) -> int:
     STATE_DIR.mkdir(parents=True, exist_ok=True)
     VERIFY_FILE.write_text(json.dumps(verification, indent=2), encoding="utf-8")
     state["status"] = "success"
+    state["current_stage"] = None
     state["finished_unix"] = time.time()
     state["verification_rows"] = len(verification)
     _write_state(state)
