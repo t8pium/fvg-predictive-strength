@@ -45,14 +45,14 @@ def _load_bars(path_text: str, mtime_ns: int) -> pd.DataFrame:
 
 
 @st.cache_data(show_spinner=False)
-def _event_catalog_cached(path_text: str, mtime_ns: int) -> pd.DataFrame:
-    return event_catalog(_load_bars(path_text, mtime_ns))
+def _event_catalog_cached(path_text: str, mtime_ns: int, include_market_state: bool) -> pd.DataFrame:
+    return event_catalog(_load_bars(path_text, mtime_ns), include_market_state=include_market_state)
 
 
 @st.cache_data(show_spinner=False)
 def _event_outcome_cached(path_text: str, mtime_ns: int, horizon: int) -> pd.Series:
     bars = _load_bars(path_text, mtime_ns)
-    events = _event_catalog_cached(path_text, mtime_ns)
+    events = _event_catalog_cached(path_text, mtime_ns, False)
     return touch_at_horizon(bars, events, horizon).astype(bool)
 
 
@@ -120,13 +120,18 @@ def event_explorer_page() -> None:
         return
 
     path, mtime = context
-    with st.spinner("Loading event catalogue…"):
-        catalog = _event_catalog_cached(str(path), mtime)
+    include_state = st.checkbox(
+        "Enable exact volatility-regime / trend filters",
+        value=False,
+        help="This reproduces the rolling causal market-state classification and is intentionally deferred because it is much heavier than basic event browsing.",
+    )
+    with st.spinner("Loading event catalogue…" if not include_state else "Calculating exact causal market-state filters…"):
+        catalog = _event_catalog_cached(str(path), mtime, include_state)
 
     section_header(
         "Filter",
         "Choose the population you want to inspect",
-        "Filtering changes only which observations are displayed. It does not alter the published research.",
+        "Basic browsing is kept fast. Exact rolling volatility/trend state is optional because reproducing it across millions of bars is computationally heavier.",
     )
     f1, f2, f3, f4 = st.columns(4)
     years = sorted(int(value) for value in catalog["year"].dropna().unique())
@@ -134,8 +139,12 @@ def event_explorer_page() -> None:
     direction = f2.selectbox("Direction", ["All", "Bullish", "Bearish"])
     sessions = sorted(str(value) for value in catalog["session"].dropna().unique())
     session = f3.selectbox("Session", ["All", *sessions])
-    regimes = sorted(str(value) for value in catalog["vol_regime"].dropna().unique())
-    regime = f4.selectbox("Volatility regime", ["All", *regimes])
+    if include_state and "vol_regime" in catalog.columns:
+        regimes = sorted(str(value) for value in catalog["vol_regime"].dropna().unique())
+        regime = f4.selectbox("Volatility regime", ["All", *regimes])
+    else:
+        f4.caption("Volatility regime filter is off")
+        regime = "All"
 
     g1, g2, g3 = st.columns(3)
     max_distance = float(g1.number_input("Max starting distance (ATR)", min_value=0.0, value=5.0, step=0.25))
@@ -153,7 +162,7 @@ def event_explorer_page() -> None:
         filtered = filtered.loc[filtered["direction_label"].eq(direction)]
     if session != "All":
         filtered = filtered.loc[filtered["session"].astype(str).eq(session)]
-    if regime != "All":
+    if regime != "All" and "vol_regime" in filtered.columns:
         filtered = filtered.loc[filtered["vol_regime"].astype(str).eq(regime)]
     if outcome_filter != "All" and len(filtered):
         outcomes = _event_outcome_cached(str(path), mtime, horizon).reindex(filtered.index)
@@ -210,9 +219,16 @@ def event_explorer_page() -> None:
         "Inspect an ordinary state-matched zone",
         "The control copies the selected FVG's normalized geometry into a non-FVG formation bar with a similar broad market state.",
     )
-    control = _matched_control_cached(str(path), mtime, event_ts.isoformat())
+    if st.button("Build matched control for this event", width="stretch"):
+        with st.spinner("Matching this event against ordinary non-FVG bars…"):
+            st.session_state["event_explorer_control"] = _matched_control_cached(str(path), mtime, event_ts.isoformat())
+            st.session_state["event_explorer_control_event"] = event_ts.isoformat()
+
+    control = None
+    if st.session_state.get("event_explorer_control_event") == event_ts.isoformat():
+        control = st.session_state.get("event_explorer_control")
     if control is None:
-        st.info("No matched control was available for this event under the reusable matcher.")
+        st.caption("Matched-control generation is on demand so browsing real events stays fast.")
         return
     control_ts = pd.Timestamp(control["control_ts"])
     control_window = event_window(bars, control_ts, before=15, after=max(30, min(horizon, 120)))
