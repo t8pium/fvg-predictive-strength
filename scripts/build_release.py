@@ -12,7 +12,7 @@ from fvg_research.report import write_report
 
 ROOT = Path(__file__).resolve().parents[1]
 DIST = ROOT / "dist"
-EXCLUDE_TOP = {".git", ".fvg_venv", "data", "results", "dist", "__pycache__"}
+EXCLUDE_TOP = {".git", ".fvg_venv", "data", "results", "dist", "site", "__pycache__"}
 EXCLUDE_PARTS = {".pytest_cache", ".mypy_cache", "__pycache__"}
 
 
