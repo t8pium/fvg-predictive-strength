@@ -3,6 +3,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
+from research_v2.ce_inference import ce_reinference
 from research_v2.methods import (
     benjamini_hochberg,
     bounded_touch_outcome,
@@ -84,6 +85,26 @@ class TestResearchV2Methods(unittest.TestCase):
         ])
         labels = cme_cluster(index)
         self.assertEqual([str(x) for x in labels], ["2026-01-15", "2026-01-16"])
+
+    def test_ce_reinference_clusters_and_adjusts_multiple_cells(self):
+        rows = []
+        timestamps = pd.date_range("2026-01-05 23:00Z", periods=80, freq="12h")
+        for i, ts in enumerate(timestamps):
+            rows.append(
+                {
+                    "timeframe": "4H" if i % 2 == 0 else "1H",
+                    "mode": "qualifying",
+                    "trigger_ts": ts,
+                    "depth": 0.46 if i % 4 < 2 else 0.56,
+                    "outcome_code": 1 if i % 3 else -1,
+                    "realized_R_conservative": 0.5 if i % 3 else -1.0,
+                }
+            )
+        frame = pd.DataFrame(rows)
+        out = ce_reinference(frame, band_width=0.05, min_n=5, n_boot=40, seed=7)
+        self.assertGreaterEqual(len(out), 2)
+        self.assertTrue({"trade_dates", "mean_R_ci_low", "mean_R_ci_high", "q_mean_R_bh"}.issubset(out.columns))
+        self.assertTrue(out["q_mean_R_bh"].between(0, 1).all())
 
 
 if __name__ == "__main__":
