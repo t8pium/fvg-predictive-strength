@@ -38,3 +38,5 @@ The repository now behaves as a small research platform rather than only a repro
 - repeat-launch bootstrap reduced to a single health probe on a healthy environment.
 
 Published v1 canonical scripts and frozen evidence remain unchanged.
+
+Final v3 validation covers the no-data demo, static report, all dashboard pages, corrected age-decay, CE clustered re-inference, local diagnostics, full-run orchestration and cross-platform packaging.
