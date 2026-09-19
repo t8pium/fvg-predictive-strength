@@ -40,3 +40,5 @@ The repository now behaves as a small research platform rather than only a repro
 Published v1 canonical scripts and frozen evidence remain unchanged.
 
 Final v3 scope also includes corrected parent-paired age decay, CME-trade-date clustered CE re-inference with FDR correction, local year/sensitivity/bootstrap diagnostics, and a generated report at the end of a full reproduction.
+
+Final release validation rerun after correcting the HTML-escaping test assertion.
