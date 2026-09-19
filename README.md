@@ -204,6 +204,96 @@ python -m research_v2.runner ce-reinfer --bootstrap 500
 
 The CE re-inference command reuses the canonical trade rows but clusters uncertainty by CME trade date and applies Benjamini-Hochberg FDR correction across the tested timeframe/depth cells. Every v2 result is labeled **NEW / UNPUBLISHED RESEARCH** until it has been run on licensed history and reviewed.
 
+## Research Platform v4 — audit layer
+
+Version **4.0.0** adds the next layer of scientific scrutiny around the preserved v1 study and corrected v2 methods.
+
+### Event-level visual audit
+
+Open **Event explorer** to browse real FVG observations on candlestick charts. Filter by year, direction, session, geometry and touch outcome. Exact volatility-regime/trend filters are optional because reproducing the rolling causal state across millions of bars is computationally heavier.
+
+Matched ordinary controls are generated on demand so ordinary browsing stays fast.
+
+### Placebos and ablations
+
+Run:
+
+~~~bash
+python -m research_v2.runner placebo-1m --horizon 60 --max-events 3000
+python -m research_v2.runner ablation-1m --horizon 60 --max-events 3000
+~~~
+
+The placebo suite deliberately breaks the FVG label using state-matched ordinary zones, shuffled event geometry, mirrored direction and time-shifted geometry.
+
+The ablation suite removes matching components one at a time to show how session, time-of-day, volatility and trend assumptions affect the measured difference.
+
+### Power / minimum detectable effect
+
+The **Power / MDE** page estimates detectable probability differences under explicit sample sizes, baseline probabilities and design-effect penalties for clustering/dependence. It also provides a mean-R detectable-effect calculator for smaller trade-like samples.
+
+### Hypothesis registry
+
+Research v2 includes an append-only JSON preregistration format with SHA-256 locking.
+
+~~~bash
+python scripts/register_hypothesis.py my_draft_hypothesis.json
+~~~
+
+A committed example lives at `research_v2/hypotheses/H001-EXAMPLE.json`.
+
+### Golden regression dataset
+
+`tests/fixtures/golden_ohlcv.csv` is a permanent synthetic mini dataset with expected detector output and a byte-stable Git blob hash. CI checks both the file identity and the exact expected FVG count.
+
+### Standard run provenance
+
+Canonical runs, corrected v2 runs and full reproductions write machine-readable capsules under:
+
+~~~text
+results/_run_records/
+~~~
+
+Each capsule records the command, git commit when available, dependency fingerprint, Python/OS, elapsed time, dataset pointer hash, input/output SHA-256 hashes and run-specific metadata.
+
+### Dataset preflight
+
+Before building the active series:
+
+~~~bash
+python scripts/preflight.py YOUR_DATA.zip
+~~~
+
+The preflight reports file/archive structure, compression size, supported members, tabular schema and—where DBN metadata or symbology sidecars expose it—MNQ contract/date hints.
+
+### Stability atlas
+
+The **Stability atlas** makes timeframe, chronology and distance effects visible together. Local reproduction unlocks additional timeframe × horizon, year, volatility and sensitivity tables when those canonical outputs exist.
+
+### Economic significance
+
+The **Economic significance** page applies explicit MNQ commission and round-turn slippage assumptions to the canonical CE trade-level outputs. Non-trade attraction probabilities are deliberately not converted into PnL without an explicit trading rule.
+
+### Published v1 vs corrected v2
+
+The **v1 vs v2** page is populated only from locally generated corrected research. It shows the historical published estimate, corrected estimate, change and the methodological reason for the revision.
+
+### GitHub Releases
+
+The repository now has release automation and versioned packaging. A release build creates:
+
+- a clean project ZIP with no local data/results/environment;
+- a self-contained HTML research report;
+- `SHA256SUMS.json`;
+- a GitHub Release with generated notes.
+
+Build locally:
+
+~~~bash
+python scripts/build_release.py
+~~~
+
+Or run the **Build GitHub release** workflow manually with a version, or push a `v*` tag.
+
 ## Repository map
 
 ~~~text
