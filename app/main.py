@@ -10,9 +10,18 @@ import streamlit as st
 
 from fvg_research.dashboard_helpers import parse_local_paths
 from fvg_research.dataset import dataset_ready
+from fvg_research.diagnostics import (
+    ce_band_intervals,
+    chronological_shift,
+    matched_effect_profile,
+    raw_fill_intervals,
+)
+from fvg_research.explainers import experiment_svg, research_flow_svg
+from fvg_research.report import build_report
 
 from .catalog import CE_TIMEFRAMES, EXPERIMENTS, EXPERIMENT_TAGS, ORDER, TF_LABELS
 from .charts import headline_metrics, published_charts
+from .provenance import EXPERIMENT_PROVENANCE
 from .runtime import (
     LARGE_UPLOAD_WARNING,
     ROOT,
@@ -43,6 +52,7 @@ REFERENCE = json.loads((ROOT / "reference_results" / "reference_metrics.json").r
 PROVENANCE = json.loads((ROOT / "reference_results" / "manifest.json").read_text(encoding="utf-8"))
 GITHUB = "https://github.com/t8pium/fvg-predictive-strength"
 REPORT = "https://t8pium.github.io/projects/fvg-predictive-strength/"
+STATIC_REPORT = "https://t8pium.github.io/fvg-predictive-strength/"
 CHART_CONFIG = {
     "displaylogo": False,
     "modeBarButtonsToRemove": ["lasso2d", "select2d"],
