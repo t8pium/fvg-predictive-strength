@@ -9,6 +9,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
+from fvg_research.bars import resample_ohlcv
 from fvg_research.dataset import current_pickle, dataset_ready
 from fvg_research.economics import economic_summary, scenario_table
 from fvg_research.event_explorer import (
@@ -45,20 +46,29 @@ def _load_bars(path_text: str, mtime_ns: int) -> pd.DataFrame:
 
 
 @st.cache_data(show_spinner=False)
-def _event_catalog_cached(path_text: str, mtime_ns: int, include_market_state: bool) -> pd.DataFrame:
-    return event_catalog(_load_bars(path_text, mtime_ns), include_market_state=include_market_state)
+def _bars_for_timeframe(path_text: str, mtime_ns: int, timeframe: str) -> pd.DataFrame:
+    base = _load_bars(path_text, mtime_ns)
+    return base if timeframe == "1m" else resample_ohlcv(base, timeframe)
 
 
 @st.cache_data(show_spinner=False)
-def _event_outcome_cached(path_text: str, mtime_ns: int, horizon: int) -> pd.Series:
-    bars = _load_bars(path_text, mtime_ns)
-    events = _event_catalog_cached(path_text, mtime_ns, False)
+def _event_catalog_cached(path_text: str, mtime_ns: int, timeframe: str, include_market_state: bool) -> pd.DataFrame:
+    return event_catalog(
+        _bars_for_timeframe(path_text, mtime_ns, timeframe),
+        include_market_state=include_market_state,
+    )
+
+
+@st.cache_data(show_spinner=False)
+def _event_outcome_cached(path_text: str, mtime_ns: int, timeframe: str, horizon: int) -> pd.Series:
+    bars = _bars_for_timeframe(path_text, mtime_ns, timeframe)
+    events = _event_catalog_cached(path_text, mtime_ns, timeframe, False)
     return touch_at_horizon(bars, events, horizon).astype(bool)
 
 
 @st.cache_data(show_spinner=False)
-def _matched_control_cached(path_text: str, mtime_ns: int, event_iso: str) -> dict[str, object] | None:
-    bars = _load_bars(path_text, mtime_ns)
+def _matched_control_cached(path_text: str, mtime_ns: int, timeframe: str, event_iso: str) -> dict[str, object] | None:
+    bars = _bars_for_timeframe(path_text, mtime_ns, timeframe)
     result = matched_control_for_event(bars, pd.Timestamp(event_iso))
     return result.to_dict() if result is not None else None
 
@@ -120,13 +130,18 @@ def event_explorer_page() -> None:
         return
 
     path, mtime = context
+    timeframe = st.selectbox(
+        "Native timeframe",
+        ["1m", "5m", "15m", "1H", "4H"],
+        help="Higher timeframes are resampled from the same active 1-minute series using the CME 18:00 ET anchor.",
+    )
     include_state = st.checkbox(
         "Enable exact volatility-regime / trend filters",
         value=False,
         help="This reproduces the rolling causal market-state classification and is intentionally deferred because it is much heavier than basic event browsing.",
     )
     with st.spinner("Loading event catalogue…" if not include_state else "Calculating exact causal market-state filters…"):
-        catalog = _event_catalog_cached(str(path), mtime, include_state)
+        catalog = _event_catalog_cached(str(path), mtime, timeframe, include_state)
 
     section_header(
         "Filter",
@@ -165,7 +180,7 @@ def event_explorer_page() -> None:
     if regime != "All" and "vol_regime" in filtered.columns:
         filtered = filtered.loc[filtered["vol_regime"].astype(str).eq(regime)]
     if outcome_filter != "All" and len(filtered):
-        outcomes = _event_outcome_cached(str(path), mtime, horizon).reindex(filtered.index)
+        outcomes = _event_outcome_cached(str(path), mtime, timeframe, horizon).reindex(filtered.index)
         filtered = filtered.loc[outcomes.eq(outcome_filter == "Touched")]
 
     if filtered.empty:
@@ -185,10 +200,10 @@ def event_explorer_page() -> None:
     if controls[2].button("Next →", width="stretch"):
         st.session_state[key] = min(len(filtered) - 1, position + 1)
         st.rerun()
-    controls[3].caption(f"Showing event {position + 1:,} of {len(filtered):,} matching observations")
+    controls[3].caption(f"{timeframe} · event {position + 1:,} of {len(filtered):,} matching observations")
 
     event_ts = filtered.index[position]
-    bars = _load_bars(str(path), mtime)
+    bars = _bars_for_timeframe(str(path), mtime, timeframe)
     summary = summarize_event(bars, event_ts, horizon=horizon)
     row = filtered.loc[event_ts]
 
@@ -221,11 +236,11 @@ def event_explorer_page() -> None:
     )
     if st.button("Build matched control for this event", width="stretch"):
         with st.spinner("Matching this event against ordinary non-FVG bars…"):
-            st.session_state["event_explorer_control"] = _matched_control_cached(str(path), mtime, event_ts.isoformat())
-            st.session_state["event_explorer_control_event"] = event_ts.isoformat()
+            st.session_state["event_explorer_control"] = _matched_control_cached(str(path), mtime, timeframe, event_ts.isoformat())
+            st.session_state["event_explorer_control_event"] = timeframe + "|" + event_ts.isoformat()
 
     control = None
-    if st.session_state.get("event_explorer_control_event") == event_ts.isoformat():
+    if st.session_state.get("event_explorer_control_event") == timeframe + "|" + event_ts.isoformat():
         control = st.session_state.get("event_explorer_control")
     if control is None:
         st.caption("Matched-control generation is on demand so browsing real events stays fast.")
