@@ -1,0 +1,8 @@
+# Keep canonical text and regression fixtures byte-stable across Windows/Linux checkouts.
+*.py text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.toml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+tests/fixtures/golden_ohlcv.csv text eol=lf
