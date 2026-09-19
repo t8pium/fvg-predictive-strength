@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version without the leading v"
+        required: true
+        default: "4.0.0"
 
 permissions:
   contents: write
@@ -11,6 +17,9 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', inputs.version) || github.ref_name }}
+      RELEASE_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
     steps:
       - uses: actions/checkout@v4
 
@@ -30,12 +39,16 @@ jobs:
           python scripts/ci_policy_check.py
 
       - name: Build release bundle
-        run: python scripts/build_release.py --version "${GITHUB_REF_NAME#v}"
+        shell: bash
+        run: |
+          VERSION="${RELEASE_VERSION#v}"
+          python scripts/build_release.py --version "$VERSION"
 
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" dist/* \
-            --title "FVG Research Platform $GITHUB_REF_NAME" \
+          gh release create "$RELEASE_TAG" dist/* \
+            --target "$GITHUB_SHA" \
+            --title "FVG Research Platform $RELEASE_TAG" \
             --generate-notes
