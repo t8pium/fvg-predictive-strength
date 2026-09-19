@@ -13,6 +13,7 @@ from fvg_research.dataset import dataset_ready
 from fvg_research.diagnostics import (
     ce_band_intervals,
     chronological_shift,
+    local_detailed_diagnostics,
     matched_effect_profile,
     raw_fill_intervals,
 )
@@ -674,6 +675,81 @@ def diagnostics_page() -> None:
         width="stretch",
         config=CHART_CONFIG,
     )
+
+    local = local_detailed_diagnostics(ROOT / "results")
+    section_header(
+        "Local diagnostics",
+        "Year, sensitivity and clustered-bootstrap outputs",
+        "These panels appear only after the detailed canonical 1m suite has been run locally. They expose diagnostics that are not fully represented in the frozen summary JSON.",
+    )
+    if not local:
+        callout(
+            "No local detailed diagnostics yet",
+            "Run the detailed 1m canonical suite from Full reproduction or an experiment Reproduce tab to unlock year-by-year, minimum-gap sensitivity, directional and clustered-bootstrap tables.",
+        )
+    else:
+        if "year" in local:
+            st.markdown("#### Year-by-year 60-minute matched effect")
+            frame = local["year"].copy()
+            if "Difference" in frame:
+                frame["Difference (pp)"] = frame["Difference"] * 100
+            st.dataframe(frame, width="stretch", hide_index=True)
+            if {"group", "Difference (pp)"}.issubset(frame.columns):
+                st.plotly_chart(
+                    px.bar(frame, x="group", y="Difference (pp)", title="Local 60-minute effect by calendar year"),
+                    width="stretch",
+                    config=CHART_CONFIG,
+                )
+
+        if "sensitivity" in local:
+            st.markdown("#### Minimum-gap-size sensitivity")
+            frame = local["sensitivity"].copy()
+            if "Difference" in frame:
+                frame["Difference (pp)"] = frame["Difference"] * 100
+            st.dataframe(frame, width="stretch", hide_index=True)
+            if {"filter", "target", "Difference (pp)"}.issubset(frame.columns):
+                st.plotly_chart(
+                    px.bar(
+                        frame,
+                        x="filter",
+                        y="Difference (pp)",
+                        color="target",
+                        barmode="group",
+                        title="Local sensitivity to minimum FVG size",
+                    ),
+                    width="stretch",
+                    config=CHART_CONFIG,
+                )
+
+        if "bootstrap_summary" in local:
+            st.markdown("#### Clustered-bootstrap inference summary")
+            frame = local["bootstrap_summary"].copy()
+            for column in ("Difference", "CI_low", "CI_high"):
+                if column in frame:
+                    frame[column + "_pp"] = frame[column] * 100
+            visible = [
+                column for column in
+                ["test", "N_matched", "Difference_pp", "CI_low_pp", "CI_high_pp", "p_cluster_boot"]
+                if column in frame.columns
+            ]
+            st.dataframe(frame[visible] if visible else frame, width="stretch", hide_index=True)
+
+        if "directional" in local:
+            st.markdown("#### Directional displacement diagnostic")
+            frame = local["directional"]
+            st.dataframe(frame, width="stretch", hide_index=True)
+            if {"bars", "FVG_mean_toward_ATR", "Control_mean_toward_ATR"}.issubset(frame.columns):
+                st.plotly_chart(
+                    px.line(
+                        frame,
+                        x="bars",
+                        y=["FVG_mean_toward_ATR", "Control_mean_toward_ATR"],
+                        markers=True,
+                        title="Local forward movement toward the zone",
+                    ),
+                    width="stretch",
+                    config=CHART_CONFIG,
+                )
 
 
 def performance_page() -> None:
