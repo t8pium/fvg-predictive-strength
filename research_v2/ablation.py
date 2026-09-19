@@ -94,9 +94,12 @@ def run_ablation(
     n_controls: int = 2,
     seed: int = 20260920,
 ) -> pd.DataFrame:
+    """Ablate matching assumptions on one common set of eligible parent FVGs."""
     state = market_state(bars)
     events = detect_fvgs(bars)
-    rows = []
+
+    controls_by_variant: dict[str, pd.DataFrame] = {}
+    parent_sets: list[set[pd.Timestamp]] = []
     for number, (label, group_columns) in enumerate(VARIANTS.items(), 1):
         controls = _custom_controls(
             events,
@@ -108,20 +111,40 @@ def run_ablation(
         )
         if controls.empty:
             continue
-        parent_index = pd.DatetimeIndex(pd.unique(controls["event_ts"]))
-        real = events.reindex(parent_index).dropna(subset=["near"])
+        controls_by_variant[label] = controls
+        parent_sets.append(set(pd.to_datetime(controls["event_ts"], utc=True)))
+
+    if not controls_by_variant:
+        raise RuntimeError("No ablation variant produced matched controls.")
+
+    common_parents = set.intersection(*parent_sets) if parent_sets else set()
+    if len(common_parents) < 20:
+        raise RuntimeError(
+            "Too few common parent FVGs survived every ablation variant; "
+            "increase max_events or reduce matching strictness."
+        )
+
+    common_index = pd.DatetimeIndex(sorted(common_parents))
+    real = events.reindex(common_index).dropna(subset=["near"])
+    real_hit = touch_at_horizon(bars, real, horizon).astype(float)
+
+    rows = []
+    for label, group_columns in VARIANTS.items():
+        controls = controls_by_variant.get(label)
+        if controls is None:
+            continue
+        controls = controls.loc[pd.to_datetime(controls["event_ts"], utc=True).isin(real.index)].copy()
+        if controls.empty:
+            continue
         control_hit = touch_at_horizon(bars, controls, horizon, time_col="control_ts").astype(float)
         parent_control = pd.DataFrame({
-            "event_ts": controls["event_ts"],
+            "event_ts": pd.to_datetime(controls["event_ts"], utc=True),
             "hit": control_hit.to_numpy(),
-        }).groupby("event_ts")["hit"].mean()
-        real_hit = touch_at_horizon(bars, real, horizon).astype(float)
+        }).groupby("event_ts")["hit"].mean().reindex(real.index)
         paired = pd.DataFrame({
             "real": real_hit,
-            "control": parent_control.reindex(real.index),
+            "control": parent_control,
         }).dropna()
-        if paired.empty:
-            continue
         rows.append({
             "Variant": label,
             "Matching fields": ", ".join(group_columns) if group_columns else "none",
