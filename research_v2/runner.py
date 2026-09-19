@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
+import time
 from pathlib import Path
 
 import numpy as np
@@ -10,7 +12,10 @@ import pandas as pd
 from fvg_research.bars import market_state
 from fvg_research.dataset import current_pickle
 from fvg_research.fvg import detect_fvgs
+from fvg_research.run_record import write_run_record
+from research_v2.ablation import run_ablation
 from research_v2.ce_inference import ce_reinference
+from research_v2.placebos import placebo_suite
 from research_v2.methods import (
     benjamini_hochberg,
     bounded_touch_outcome,
@@ -24,6 +29,27 @@ from research_v2.methods import (
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "results" / "research_v2"
 AGE_HORIZONS = (1, 3, 5, 10, 20)
+
+
+def _record_v2(study: str, started: float, outputs: list[Path], args: argparse.Namespace, inputs: list[Path] | None = None) -> Path:
+    return write_run_record(
+        ROOT,
+        kind=f"research-v2-{study}",
+        command=[sys.executable, "-m", "research_v2.runner", *sys.argv[1:]],
+        status="success",
+        started_unix=started,
+        inputs=inputs or [current_pickle()],
+        outputs=outputs,
+        extra={
+            "research_version": "v2",
+            "published_reference": False,
+            "horizon": getattr(args, "horizon", None),
+            "max_events": getattr(args, "max_events", None),
+            "controls": getattr(args, "controls", None),
+            "seed": getattr(args, "seed", None),
+            "bootstrap": getattr(args, "bootstrap", None),
+        },
+    )
 
 
 def load_bars() -> pd.DataFrame:
@@ -230,7 +256,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Corrected/extended Research v2 runner. Results are new research, not published v1 evidence."
     )
-    parser.add_argument("study", choices=["attraction-1m", "age-decay-1m", "walk-forward-1m", "ce-reinfer"])
+    parser.add_argument("study", choices=["attraction-1m", "age-decay-1m", "walk-forward-1m", "ce-reinfer", "placebo-1m", "ablation-1m"])
     parser.add_argument("--horizon", type=int, default=60)
     parser.add_argument("--max-events", type=int, default=10_000)
     parser.add_argument("--controls", type=int, default=3)
@@ -239,6 +265,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     OUT.mkdir(parents=True, exist_ok=True)
+    started = time.time()
 
     if args.study == "ce-reinfer":
         ce_dir = ROOT / "results" / "ce_body"
@@ -269,11 +296,65 @@ def main(argv: list[str] | None = None) -> int:
             ],
             "cells": frame.to_dict(orient="records"),
         }
-        (OUT / "ce_reinference.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        json_path = OUT / "ce_reinference.json"
+        csv_path = OUT / "ce_reinference.csv"
+        json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        record = _record_v2(args.study, started, [json_path, csv_path], args, inputs=[trade_file])
+        payload["run_record"] = str(record.relative_to(ROOT))
+        json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
         print(json.dumps(payload, indent=2))
         return 0
 
     bars = load_bars()
+
+    if args.study == "placebo-1m":
+        frame = placebo_suite(
+            bars,
+            horizon=args.horizon,
+            max_events=args.max_events,
+            seed=args.seed,
+        )
+        csv_path = OUT / "placebo_1m.csv"
+        json_path = OUT / "placebo_1m.json"
+        frame.to_csv(csv_path, index=False)
+        payload = {
+            "research_version": "v2",
+            "published_reference": False,
+            "purpose": "negative controls / false-discovery diagnostic",
+            "horizon_bars": args.horizon,
+            "results": frame.to_dict(orient="records"),
+        }
+        json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        record = _record_v2(args.study, started, [csv_path, json_path], args)
+        payload["run_record"] = str(record.relative_to(ROOT))
+        json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        print(json.dumps(payload, indent=2))
+        return 0
+
+    if args.study == "ablation-1m":
+        frame = run_ablation(
+            bars,
+            horizon=args.horizon,
+            max_events=args.max_events,
+            n_controls=args.controls,
+            seed=args.seed,
+        )
+        csv_path = OUT / "ablation_1m.csv"
+        json_path = OUT / "ablation_1m.json"
+        frame.to_csv(csv_path, index=False)
+        payload = {
+            "research_version": "v2",
+            "published_reference": False,
+            "purpose": "matching-component ablation",
+            "horizon_bars": args.horizon,
+            "results": frame.to_dict(orient="records"),
+        }
+        json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        record = _record_v2(args.study, started, [csv_path, json_path], args)
+        payload["run_record"] = str(record.relative_to(ROOT))
+        json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        print(json.dumps(payload, indent=2))
+        return 0
 
     if args.study == "attraction-1m":
         result = corrected_attraction(
@@ -298,6 +379,9 @@ def main(argv: list[str] | None = None) -> int:
             "result": result,
         }
         path = OUT / "corrected_attraction_1m.json"
+        path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        record = _record_v2(args.study, started, [path], args)
+        payload["run_record"] = str(record.relative_to(ROOT))
         path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
         print(json.dumps(payload, indent=2))
         return 0
@@ -325,7 +409,12 @@ def main(argv: list[str] | None = None) -> int:
             ],
             "windows": frame.to_dict(orient="records"),
         }
-        (OUT / "corrected_age_decay_1m.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        json_path = OUT / "corrected_age_decay_1m.json"
+        csv_path = OUT / "corrected_age_decay_1m.csv"
+        json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        record = _record_v2(args.study, started, [csv_path, json_path], args)
+        payload["run_record"] = str(record.relative_to(ROOT))
+        json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
         print(json.dumps(payload, indent=2))
         return 0
 
@@ -367,7 +456,12 @@ def main(argv: list[str] | None = None) -> int:
         ],
         "windows": frame.to_dict(orient="records"),
     }
-    (OUT / "walk_forward_1m.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    json_path = OUT / "walk_forward_1m.json"
+    csv_path = OUT / "walk_forward_1m.csv"
+    json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    record = _record_v2(args.study, started, [csv_path, json_path], args)
+    payload["run_record"] = str(record.relative_to(ROOT))
+    json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     print(json.dumps(payload, indent=2))
     return 0
 
