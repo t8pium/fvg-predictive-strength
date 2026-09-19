@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import subprocess
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -39,6 +40,14 @@ def main() -> int:
     assert provenance["dataset"]["active_1m_rows"] == reference["study"]["active_1m_rows"]
     assert provenance["dataset"]["contracts"] == reference["study"]["contracts"]
 
+    version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    assert project["project"]["version"] == version, "VERSION and pyproject.toml version drift"
+    assert (ROOT / ".github/workflows/release.yml").is_file(), "Tagged release automation is missing"
+    assert (ROOT / "tests/fixtures/golden_ohlcv.csv").is_file(), "Golden fixture is missing"
+    assert (ROOT / "tests/fixtures/golden_manifest.json").is_file(), "Golden fixture manifest is missing"
+    assert (ROOT / "research_v2/hypotheses/H001-EXAMPLE.json").is_file(), "Hypothesis-registry example is missing"
+
     for relative, expected in ORIGINAL_HASHES.items():
         actual = canonical_digest(ROOT / relative)
         assert actual == expected, f"Canonical source changed without audit: {relative}"
@@ -64,7 +73,7 @@ def main() -> int:
                 pass
     assert not forbidden_data, f"Licensed/generated data is tracked: {sorted(set(forbidden_data))}"
     assert not forbidden_paths, f"Noncanonical container paths found: {forbidden_paths}"
-    print("Reference metrics, provenance, figures, canonical hashes, path policy, and data-exclusion policy passed.")
+    print("Reference metrics, provenance, v4 version/release fixtures, canonical hashes, path policy, and data-exclusion policy passed.")
     return 0
 
 
