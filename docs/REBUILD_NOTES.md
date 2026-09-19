@@ -42,3 +42,23 @@ Published v1 canonical scripts and frozen evidence remain unchanged.
 Final v3 scope also includes corrected parent-paired age decay, CME-trade-date clustered CE re-inference with FDR correction, local year/sensitivity/bootstrap diagnostics, and a generated report at the end of a full reproduction.
 
 Release validation rerun after aligning the report leakage assertion with the repository path policy.
+
+
+## Research Platform v4
+
+The v4 audit layer adds:
+
+- interactive event-level candle inspection with on-demand matched controls;
+- negative-control/placebo tests;
+- matching-component ablations;
+- power and minimum-detectable-effect analysis;
+- SHA-256-locked Research v2 hypothesis preregistration;
+- permanent synthetic golden regression fixture;
+- standardized run provenance capsules with input/output hashes;
+- pre-build dataset inspection;
+- stability atlas views;
+- explicit MNQ economic-cost scenarios for trade-like CE outputs;
+- published-v1 versus corrected-v2 comparison;
+- versioned release bundling and GitHub Release automation.
+
+Published v1 canonical scripts remain unchanged.
