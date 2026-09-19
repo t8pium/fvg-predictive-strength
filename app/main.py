@@ -978,6 +978,16 @@ def home_page() -> None:
     with cols[2]:
         info_card("Independent rerun", "Bring licensed data, build the active series and compare your output against the frozen reference.")
 
+    cta_left, cta_right = st.columns(2)
+    with cta_left:
+        if st.button("Run the no-data quick demo →", type="primary", width="stretch"):
+            st.session_state["page"] = "Quick Demo"
+            st.rerun()
+    with cta_right:
+        if st.button("Open full reproduction →", width="stretch"):
+            st.session_state["page"] = "Full Reproduction"
+            st.rerun()
+
     st.markdown("---")
     st.markdown(
         f"[GitHub repository]({GITHUB}) · "
