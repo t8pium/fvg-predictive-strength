@@ -12,15 +12,19 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from app.catalog import EXPERIMENTS
+from app.provenance import EXPERIMENT_PROVENANCE
 from app.verification import verification_rows
 from fvg_research.dashboard_helpers import load_latest_success
 from fvg_research.dataset import current_pickle
+from fvg_research.report import write_report
 
 RESULTS = ROOT / "results"
 RUNNER = ROOT / "scripts" / "run_original.py"
 STATE_DIR = RESULTS / "_full_reproduction"
 STATE_FILE = STATE_DIR / "state.json"
 VERIFY_FILE = STATE_DIR / "verification.json"
+REPORT_FILE = STATE_DIR / "research_report.html"
 REFERENCE_PATH = ROOT / "reference_results" / "reference_metrics.json"
 CE_TFS = [1, 2, 3, 5, 10, 15, 30, 60, 120, 240, 360, 480, 720, 1440]
 
@@ -201,15 +205,24 @@ def main(argv: list[str] | None = None) -> int:
     verification = _verification()
     STATE_DIR.mkdir(parents=True, exist_ok=True)
     VERIFY_FILE.write_text(json.dumps(verification, indent=2), encoding="utf-8")
+    write_report(
+        REPORT_FILE,
+        REFERENCE_PATH,
+        EXPERIMENTS,
+        EXPERIMENT_PROVENANCE,
+        ROOT,
+    )
     state["status"] = "success"
     state["current_stage"] = None
     state["finished_unix"] = time.time()
     state["verification_rows"] = len(verification)
+    state["report"] = str(REPORT_FILE.relative_to(ROOT))
     _write_state(state)
 
     print("\n=== Full reproduction complete ===")
     print(f"State: {STATE_FILE}")
     print(f"Published-vs-local verification: {VERIFY_FILE}")
+    print(f"Self-contained research report: {REPORT_FILE}")
     print("Completed stages are cached by active-dataset timestamp. Re-running will skip them.")
     return 0
 
