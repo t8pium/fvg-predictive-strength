@@ -16,6 +16,7 @@ from fvg_research.run_record import write_run_record
 from research_v2.ablation import run_ablation
 from research_v2.ce_inference import ce_reinference
 from research_v2.placebos import placebo_suite
+from research_v2.hypotheses import verify_hypothesis
 from research_v2.methods import (
     benjamini_hochberg,
     bounded_touch_outcome,
@@ -48,6 +49,7 @@ def _record_v2(study: str, started: float, outputs: list[Path], args: argparse.N
             "controls": getattr(args, "controls", None),
             "seed": getattr(args, "seed", None),
             "bootstrap": getattr(args, "bootstrap", None),
+            "hypothesis": getattr(args, "_verified_hypothesis", None),
         },
     )
 
@@ -262,7 +264,27 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--controls", type=int, default=3)
     parser.add_argument("--seed", type=int, default=20260920)
     parser.add_argument("--bootstrap", type=int, default=500)
+    parser.add_argument(
+        "--hypothesis",
+        help="Optional locked preregistration JSON. Its SHA-256 lock is verified before the analysis runs.",
+    )
     args = parser.parse_args(argv)
+
+    args._verified_hypothesis = None
+    if args.hypothesis:
+        hypothesis_path = Path(args.hypothesis).expanduser().resolve()
+        if not hypothesis_path.is_file():
+            print(f"ERROR: Hypothesis file not found: {hypothesis_path}", file=sys.stderr)
+            return 2
+        payload = json.loads(hypothesis_path.read_text(encoding="utf-8"))
+        if not verify_hypothesis(payload):
+            print("ERROR: Hypothesis lock hash is missing or invalid.", file=sys.stderr)
+            return 2
+        args._verified_hypothesis = {
+            "path": str(hypothesis_path),
+            "hypothesis_id": payload.get("hypothesis_id"),
+            "lock_hash": payload.get("lock_hash"),
+        }
 
     OUT.mkdir(parents=True, exist_ok=True)
     started = time.time()
