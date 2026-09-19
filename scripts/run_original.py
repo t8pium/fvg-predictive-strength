@@ -16,6 +16,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from fvg_research.dataset import current_pickle
+from fvg_research.run_record import write_run_record
 
 ORIGINAL = ROOT / "src" / "original"
 RESULTS = ROOT / "results"
@@ -221,10 +222,35 @@ def main(argv: list[str] | None = None) -> int:
     (RUNS / f"latest_{args.study}.json").write_text(manifest_text, encoding="utf-8")
     if args.tf is not None:
         (RUNS / f"latest_{args.study}_tf{args.tf}.json").write_text(manifest_text, encoding="utf-8")
+    record = write_run_record(
+        ROOT,
+        kind=f"canonical-{args.study}" + (f"-tf{args.tf}" if args.tf is not None else ""),
+        command=[sys.executable, str(ROOT / "scripts" / "run_original.py"), *sys.argv[1:]],
+        status=status,
+        started_unix=started.timestamp(),
+        finished_unix=finished.timestamp(),
+        inputs=[data, source],
+        outputs=changed,
+        extra={
+            "canonical_source_sha256": digest,
+            "tf": args.tf,
+            "ce_tfs": ce_values if args.study == "ce-body" else None,
+            "exit_code": exit_code,
+            "error": error,
+        },
+    )
+    manifest["run_record"] = str(record.relative_to(ROOT))
+    manifest_text = json.dumps(manifest, indent=2)
+    (RUNS / run_name).write_text(manifest_text, encoding="utf-8")
+    (RUNS / f"latest_{args.study}.json").write_text(manifest_text, encoding="utf-8")
+    if args.tf is not None:
+        (RUNS / f"latest_{args.study}_tf{args.tf}.json").write_text(manifest_text, encoding="utf-8")
+
     if status != "success":
         print(f"ERROR: Canonical experiment failed: {error}", file=sys.stderr)
     else:
         print(f"Run manifest: {RUNS / run_name}")
+        print(f"Run provenance capsule: {record}")
     return exit_code
 
 
