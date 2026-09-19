@@ -216,8 +216,11 @@ def main(argv: list[str] | None = None) -> int:
         "error": error,
     }
     run_name = f"{started.strftime('%Y%m%dT%H%M%S')}_{args.study}.json"
-    (RUNS / run_name).write_text(json.dumps(manifest, indent=2), encoding="utf-8")
-    (RUNS / f"latest_{args.study}.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    manifest_text = json.dumps(manifest, indent=2)
+    (RUNS / run_name).write_text(manifest_text, encoding="utf-8")
+    (RUNS / f"latest_{args.study}.json").write_text(manifest_text, encoding="utf-8")
+    if args.tf is not None:
+        (RUNS / f"latest_{args.study}_tf{args.tf}.json").write_text(manifest_text, encoding="utf-8")
     if status != "success":
         print(f"ERROR: Canonical experiment failed: {error}", file=sys.stderr)
     else:
