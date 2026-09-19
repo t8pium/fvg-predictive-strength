@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="460" viewBox="0 0 920 460">
+<rect width="100%" height="100%" fill="#0d1117"/>
+<text x="78" y="32" fill="#f0f6fc" font-family="Arial,sans-serif" font-size="22" font-weight="700">Incremental FVG attraction versus matched controls</text>
+<text x="78" y="53" fill="#8b949e" font-family="Arial,sans-serif" font-size="13">Most of the excess attraction is concentrated near formation</text>
+<line x1="78" y1="382" x2="896" y2="382" stroke="#30363d"/>
+<line x1="78" y1="382.0" x2="896" y2="382.0" stroke="#21262d"/>
+<text x="68" y="386.0" text-anchor="end" fill="#8b949e" font-family="Arial,sans-serif" font-size="11">-0.39 pp</text>
+<line x1="78" y1="303.5" x2="896" y2="303.5" stroke="#21262d"/>
+<text x="68" y="307.5" text-anchor="end" fill="#8b949e" font-family="Arial,sans-serif" font-size="11">0.56 pp</text>
+<line x1="78" y1="225.0" x2="896" y2="225.0" stroke="#21262d"/>
+<text x="68" y="229.0" text-anchor="end" fill="#8b949e" font-family="Arial,sans-serif" font-size="11">1.50 pp</text>
+<line x1="78" y1="146.5" x2="896" y2="146.5" stroke="#21262d"/>
+<text x="68" y="150.5" text-anchor="end" fill="#8b949e" font-family="Arial,sans-serif" font-size="11">2.45 pp</text>
+<line x1="78" y1="68.0" x2="896" y2="68.0" stroke="#21262d"/>
+<text x="68" y="72.0" text-anchor="end" fill="#8b949e" font-family="Arial,sans-serif" font-size="11">3.39 pp</text>
+<rect x="99.5" y="98.4" width="59.3" height="251.2" rx="3" fill="#3fb950"/>
+<text x="129.1" y="406" text-anchor="middle" fill="#8b949e" font-family="Arial,sans-serif" font-size="11">5m</text>
+<text x="129.1" y="91.4" text-anchor="middle" fill="#c9d1d9" font-family="Arial,sans-serif" font-size="11">+3.03 pp</text>
+<rect x="201.7" y="229.0" width="59.3" height="120.6" rx="3" fill="#3fb950"/>
+<text x="231.4" y="406" text-anchor="middle" fill="#8b949e" font-family="Arial,sans-serif" font-size="11">15m</text>
+<text x="231.4" y="222.0" text-anchor="middle" fill="#c9d1d9" font-family="Arial,sans-serif" font-size="11">+1.45 pp</text>
+<rect x="304.0" y="270.3" width="59.3" height="79.3" rx="3" fill="#3fb950"/>
+<text x="333.6" y="406" text-anchor="middle" fill="#8b949e" font-family="Arial,sans-serif" font-size="11">30m</text>
+<text x="333.6" y="263.3" text-anchor="middle" fill="#c9d1d9" font-family="Arial,sans-serif" font-size="11">+0.96 pp</text>
+<rect x="406.2" y="301.7" width="59.3" height="47.9" rx="3" fill="#3fb950"/>
+<text x="435.9" y="406" text-anchor="middle" fill="#8b949e" font-family="Arial,sans-serif" font-size="11">60m</text>
+<text x="435.9" y="294.7" text-anchor="middle" fill="#c9d1d9" font-family="Arial,sans-serif" font-size="11">+0.58 pp</text>
+<rect x="508.5" y="306.1" width="59.3" height="43.5" rx="3" fill="#3fb950"/>
+<text x="538.1" y="406" text-anchor="middle" fill="#8b949e" font-family="Arial,sans-serif" font-size="11">120m</text>
+<text x="538.1" y="299.1" text-anchor="middle" fill="#c9d1d9" font-family="Arial,sans-serif" font-size="11">+0.52 pp</text>
+<rect x="610.7" y="328.8" width="59.3" height="20.7" rx="3" fill="#3fb950"/>
+<text x="640.4" y="406" text-anchor="middle" fill="#8b949e" font-family="Arial,sans-serif" font-size="11">240m</text>
+<text x="640.4" y="321.8" text-anchor="middle" fill="#c9d1d9" font-family="Arial,sans-serif" font-size="11">+0.25 pp</text>
+<rect x="713.0" y="349.3" width="59.3" height="1.0" rx="3" fill="#3fb950"/>
+<text x="742.6" y="406" text-anchor="middle" fill="#8b949e" font-family="Arial,sans-serif" font-size="11">~1d</text>
+<text x="742.6" y="342.3" text-anchor="middle" fill="#c9d1d9" font-family="Arial,sans-serif" font-size="11">+0.00 pp</text>
+<rect x="815.2" y="349.6" width="59.3" height="2.0" rx="3" fill="#f85149"/>
+<text x="844.9" y="406" text-anchor="middle" fill="#8b949e" font-family="Arial,sans-serif" font-size="11">~3d</text>
+<text x="844.9" y="342.6" text-anchor="middle" fill="#c9d1d9" font-family="Arial,sans-serif" font-size="11">-0.02 pp</text>
+</svg>
