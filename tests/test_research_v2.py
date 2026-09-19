@@ -6,7 +6,9 @@ import pandas as pd
 from research_v2.methods import (
     benjamini_hochberg,
     bounded_touch_outcome,
+    cme_cluster,
     full_horizon_mask,
+    parent_paired_age_decay,
     walk_forward_windows,
 )
 
@@ -49,6 +51,39 @@ class TestResearchV2Methods(unittest.TestCase):
         self.assertGreater(len(windows), 1)
         for row in windows:
             self.assertLess(row["train_end"], row["test_start"])
+
+    def test_parent_paired_decay_gives_each_parent_one_control_weight(self):
+        index = pd.to_datetime(["2026-01-01T00:00Z", "2026-01-01T01:00Z"])
+        real = pd.DataFrame(
+            {"touch_1": [0, 0], "touch_3": [1, 0]},
+            index=index,
+        )
+        controls = pd.DataFrame(
+            {
+                "event_ts": [index[0], index[0], index[0], index[1]],
+                "touch_1": [0, 0, 0, 0],
+                "touch_3": [1, 1, 0, 0],
+            }
+        )
+        out = parent_paired_age_decay(
+            real,
+            controls,
+            control_parent_col="event_ts",
+            horizon_columns={1: "touch_1", 3: "touch_3"},
+        )
+        row = out.iloc[0]
+        self.assertEqual(row["parents"], 2)
+        self.assertAlmostEqual(row["real_rate"], 0.5)
+        self.assertAlmostEqual(row["control_rate"], 1 / 3, places=6)
+        self.assertAlmostEqual(row["difference_pp"], (0.5 - 1 / 3) * 100, places=6)
+
+    def test_cme_cluster_rolls_at_1800_eastern(self):
+        index = pd.DatetimeIndex([
+            "2026-01-15 22:59:00+00:00",
+            "2026-01-15 23:00:00+00:00",
+        ])
+        labels = cme_cluster(index)
+        self.assertEqual([str(x) for x in labels], ["2026-01-15", "2026-01-16"])
 
 
 if __name__ == "__main__":
