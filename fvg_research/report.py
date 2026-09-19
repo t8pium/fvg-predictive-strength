@@ -198,6 +198,26 @@ code{background:#151d27;padding:2px 5px;border-radius:5px}@media(max-width:850px
 
 {''.join(sections)}
 
+<section class="experiment" id="platform-v4">
+  <div class="eyebrow">Research Platform v4</div>
+  <h2>Audit the observations, stress-test the pipeline, then extend the study</h2>
+  <p class="question">The published v1 evidence remains frozen while the surrounding platform adds stronger falsification and reproducibility tooling.</p>
+  <div class="metric-grid">
+    <div class="metric"><div class="metric-label">Visual audit</div><div class="metric-value">Event explorer</div></div>
+    <div class="metric"><div class="metric-label">False-discovery checks</div><div class="metric-value">Placebos + ablations</div></div>
+    <div class="metric"><div class="metric-label">Sensitivity</div><div class="metric-value">Power / MDE</div></div>
+    <div class="metric"><div class="metric-label">Confirmatory workflow</div><div class="metric-value">SHA-256 preregistration</div></div>
+    <div class="metric"><div class="metric-label">Regression proof</div><div class="metric-value">Golden fixture</div></div>
+    <div class="metric"><div class="metric-label">Run audit trail</div><div class="metric-value">Provenance capsules</div></div>
+    <div class="metric"><div class="metric-label">Input safety</div><div class="metric-value">Dataset preflight</div></div>
+    <div class="metric"><div class="metric-label">Robustness</div><div class="metric-value">Stability atlas</div></div>
+    <div class="metric"><div class="metric-label">Practical relevance</div><div class="metric-value">Economic significance</div></div>
+    <div class="metric"><div class="metric-label">Self-audit</div><div class="metric-value">v1 → v2 comparison</div></div>
+    <div class="metric"><div class="metric-label">Distribution</div><div class="metric-value">Versioned releases</div></div>
+  </div>
+  <div class="warning"><strong>Important.</strong> Corrected Research v2 values are not inserted into this published report until they have actually been rerun on licensed data and reviewed. The platform adds the machinery; it does not invent corrected market results.</div>
+</section>
+
 <footer class="footer">
 <p><strong>Reproducibility.</strong> Frozen evidence lives in <code>reference_results/reference_metrics.json</code>; canonical source hashes and dataset provenance live in <code>reference_results/manifest.json</code>. The original analysis files remain under <code>src/original/</code>.</p>
 <p>This report is generated from repository data. It does not redistribute licensed market history.</p>
