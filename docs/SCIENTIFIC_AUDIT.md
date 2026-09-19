@@ -2,6 +2,19 @@
 
 This audit distinguishes the preserved published analysis from portability code. The four files in `src/original/` remain byte-for-byte unchanged and are SHA-256 checked in CI and at runtime.
 
+## Audit at a glance
+
+| Area | Status | What that means |
+|---|---|---|
+| FVG detection / geometry | Verified | Completed-candle construction and bullish/bearish geometry were traced. |
+| Lookahead mechanics | Verified | Event creation and stated outcome timing are causal in the tested mechanics. |
+| Active-contract construction | Verified | CME trade-date volume selection and 18:00 ET boundary are covered. |
+| Canonical source integrity | Verified | Published scripts are hash-locked and only temporary path constants are rewritten. |
+| Full market-statistic regeneration | Not independently rerun in the software audit | Licensed Databento history is not committed to the repository. |
+| Published methodological limitations | Retained and documented | They are not silently changed because that would create a different study. |
+
+The sections below separate **software correctness** from **scientific limitations of the published analysis**. A documented limitation does not mean the code failed to run; it means the corresponding estimate should be interpreted with that caveat.
+
 ## What was verified
 
 - Every FVG is detected from completed candles A, B, and C; outcomes begin after the formation/touch bar where stated.
