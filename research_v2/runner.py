@@ -16,11 +16,13 @@ from research_v2.methods import (
     cluster_bootstrap_difference,
     cme_cluster,
     matched_controls_in_window,
+    parent_paired_age_decay,
     walk_forward_windows,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "results" / "research_v2"
+AGE_HORIZONS = (1, 3, 5, 10, 20)
 
 
 def load_bars() -> pd.DataFrame:
@@ -34,17 +36,15 @@ def load_bars() -> pd.DataFrame:
     return bars.sort_index()
 
 
-def corrected_attraction(
+def _matched_sample(
     bars: pd.DataFrame,
     *,
     start: pd.Timestamp,
     end: pd.Timestamp,
-    horizon: int,
     max_events: int,
     controls_per_event: int,
     seed: int,
-    n_boot: int,
-) -> dict[str, float | int | str]:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     state = market_state(bars)
     events = detect_fvgs(bars)
     controls = matched_controls_in_window(
@@ -61,6 +61,32 @@ def corrected_attraction(
 
     parents = pd.DatetimeIndex(pd.unique(controls["event_ts"]))
     real = events.reindex(parents).dropna(subset=["near"])
+    controls = controls.loc[controls["event_ts"].isin(real.index)].copy()
+    if real.empty or controls.empty:
+        raise RuntimeError("No matched parent/control sample remained after alignment.")
+    return real, controls
+
+
+def corrected_attraction(
+    bars: pd.DataFrame,
+    *,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+    horizon: int,
+    max_events: int,
+    controls_per_event: int,
+    seed: int,
+    n_boot: int,
+) -> dict[str, float | int | str]:
+    real, controls = _matched_sample(
+        bars,
+        start=start,
+        end=end,
+        max_events=max_events,
+        controls_per_event=controls_per_event,
+        seed=seed,
+    )
+
     real_hit = bounded_touch_outcome(bars, real, horizon)
     control_hit = bounded_touch_outcome(bars, controls, horizon, time_col="control_ts")
     ctrl = pd.DataFrame(
@@ -96,11 +122,114 @@ def corrected_attraction(
     }
 
 
+def corrected_age_decay(
+    bars: pd.DataFrame,
+    *,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+    max_events: int,
+    controls_per_event: int,
+    seed: int,
+    n_boot: int,
+) -> pd.DataFrame:
+    real, controls = _matched_sample(
+        bars,
+        start=start,
+        end=end,
+        max_events=max_events,
+        controls_per_event=controls_per_event,
+        seed=seed,
+    )
+
+    real_outcomes = pd.DataFrame(index=real.index)
+    control_outcomes = controls[["event_ts"]].copy()
+    horizon_columns: dict[int, str] = {}
+
+    for horizon in AGE_HORIZONS:
+        column = f"touch_{horizon}"
+        horizon_columns[horizon] = column
+        real_outcomes[column] = bounded_touch_outcome(bars, real, horizon)
+        control_outcomes[column] = bounded_touch_outcome(
+            bars,
+            controls,
+            horizon,
+            time_col="control_ts",
+        ).to_numpy()
+
+    summary = parent_paired_age_decay(
+        real_outcomes,
+        control_outcomes,
+        control_parent_col="event_ts",
+        horizon_columns=horizon_columns,
+    )
+
+    rows: list[dict[str, object]] = []
+    for start_h, end_h in zip(AGE_HORIZONS[:-1], AGE_HORIZONS[1:]):
+        start_col = horizon_columns[start_h]
+        end_col = horizon_columns[end_h]
+
+        real_conditional = real_outcomes.loc[
+            real_outcomes[start_col].eq(0),
+            end_col,
+        ].astype(float)
+
+        ctrl_survivors = control_outcomes.loc[
+            control_outcomes[start_col].eq(0),
+            ["event_ts", end_col],
+        ].dropna()
+        ctrl_parent = ctrl_survivors.groupby("event_ts")[end_col].mean()
+
+        paired = pd.DataFrame(
+            {
+                "real": real_conditional,
+                "control": ctrl_parent.reindex(real_conditional.index),
+            }
+        ).dropna()
+
+        if len(paired):
+            diff = paired["real"] - paired["control"]
+            inference = cluster_bootstrap_difference(
+                diff,
+                cme_cluster(pd.DatetimeIndex(paired.index)),
+                n_boot=n_boot,
+                seed=seed + end_h,
+            )
+            ci_low_pp = inference["ci_low"] * 100
+            ci_high_pp = inference["ci_high"] * 100
+            p_value = inference["p_two_sided"]
+        else:
+            ci_low_pp = np.nan
+            ci_high_pp = np.nan
+            p_value = np.nan
+
+        base = summary.loc[summary["window"] == f"{start_h}→{end_h}"]
+        row = base.iloc[0].to_dict() if len(base) else {
+            "window": f"{start_h}→{end_h}",
+            "parents": 0,
+            "real_rate": np.nan,
+            "control_rate": np.nan,
+            "difference_pp": np.nan,
+        }
+        row.update(
+            {
+                "ci_low_pp": float(ci_low_pp),
+                "ci_high_pp": float(ci_high_pp),
+                "p_two_sided": float(p_value),
+            }
+        )
+        rows.append(row)
+
+    frame = pd.DataFrame(rows)
+    if len(frame):
+        frame["q_bh"] = benjamini_hochberg(frame["p_two_sided"])
+    return frame
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Corrected/extended Research v2 runner. Results are new research, not published v1 evidence."
     )
-    parser.add_argument("study", choices=["attraction-1m", "walk-forward-1m"])
+    parser.add_argument("study", choices=["attraction-1m", "age-decay-1m", "walk-forward-1m"])
     parser.add_argument("--horizon", type=int, default=60)
     parser.add_argument("--max-events", type=int, default=10_000)
     parser.add_argument("--controls", type=int, default=3)
@@ -138,11 +267,42 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(payload, indent=2))
         return 0
 
+    if args.study == "age-decay-1m":
+        frame = corrected_age_decay(
+            bars,
+            start=bars.index.min(),
+            end=bars.index.max() + pd.Timedelta(nanoseconds=1),
+            max_events=args.max_events,
+            controls_per_event=args.controls,
+            seed=args.seed,
+            n_boot=args.bootstrap,
+        )
+        frame.to_csv(OUT / "corrected_age_decay_1m.csv", index=False)
+        payload = {
+            "research_version": "v2",
+            "published_reference": False,
+            "corrections": [
+                "parent-paired conditional control outcomes",
+                "full requested horizon required",
+                "active-contract boundary censoring",
+                "CME trade-date cluster bootstrap",
+                "Benjamini-Hochberg correction across age windows",
+            ],
+            "windows": frame.to_dict(orient="records"),
+        }
+        (OUT / "corrected_age_decay_1m.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        print(json.dumps(payload, indent=2))
+        return 0
+
     events = detect_fvgs(bars)
     windows = walk_forward_windows(events.index)
     rows = []
     for number, window in enumerate(windows, 1):
-        print(f"Walk-forward window {number}/{len(windows)}: {window['test_start']} → {window['test_end']}", flush=True)
+        print(
+            f"Walk-forward window {number}/{len(windows)}: "
+            f"{window['test_start']} → {window['test_end']}",
+            flush=True,
+        )
         row = corrected_attraction(
             bars,
             start=window["test_start"],
