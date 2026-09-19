@@ -2,6 +2,22 @@
 
 This document maps every public portfolio experiment to the exact original analysis code and describes the experiment as an executable sequence.
 
+## Experiment map
+
+| # | Experiment | Core question | Canonical source |
+|---:|---|---|---|
+| 01 | Raw Fill Rates | How often are FVGs revisited? | `fvg_final_fast.py` |
+| 02 | Matched-Zone Attraction | Are FVGs reached more often than comparable ordinary zones? | `fvg_final_fast.py` + `fvg_strength_one_tf.py` |
+| 03 | FVG Age Decay | Does the effect persist as an unfilled gap gets older? | `fvg_strength_one_tf.py` |
+| 04 | Formation Continuation | Does FVG formation predict continuation? | `fvg_strength_one_tf.py` |
+| 05 | First-Touch Retest Reaction | Does price react differently after first touch? | `fvg_strength_one_tf.py` |
+| 06 | Midpoint / CE | Is the exact 50% level special? | `fvg_midpoint_reaction.py` |
+| 07 | Candle-Body Acceptance | Does close depth inside the FVG matter? | `fvg_ce_rejection_study.py` |
+| 08 | Distance, Regimes & Controlled Model | Does the FVG label survive explicit controls? | `fvg_final_fast.py` |
+| 09 | Chronological Robustness | Does the effect survive later data? | `fvg_final_fast.py` + `fvg_strength_one_tf.py` |
+
+**Suggested reading order:** 01 → 02 → 08 → 09 for the core magnet claim; then 03–07 for secondary behavior.
+
 ## Shared input
 
 All experiments use the active-contract one-minute MNQ series created by:
