@@ -212,3 +212,121 @@ The normal CI suite still checks:
 - canonical source hashes;
 - provenance / reference-figure policy;
 - exclusion of licensed/generated market data.
+
+
+## Research Platform v4 audit tools
+
+### Event explorer
+
+**Event explorer** provides an event-level visual audit on the active dataset:
+
+- real candlestick bars around the formation;
+- lower/upper FVG edges and midpoint;
+- selected forward touch outcome;
+- year/direction/session/geometry filters;
+- optional exact causal volatility/trend state;
+- one matched ordinary control generated on demand.
+
+The expensive state-matching operation is not run during ordinary navigation.
+
+### Placebo / negative-control suite
+
+`research_v2/placebos.py` asks whether the pipeline also creates apparent effects after deliberately breaking the FVG hypothesis.
+
+Current controls include:
+
+- state-matched ordinary zones;
+- shuffled FVG geometry;
+- direction-flipped mirror zones;
+- time-shifted FVG geometry.
+
+Run it from **Placebos / ablations** or:
+
+```bash
+python -m research_v2.runner placebo-1m --horizon 60
+```
+
+### Matching ablation
+
+`research_v2/ablation.py` systematically compares full matching with versions that remove session, time-of-day, volatility regime, trend or all state grouping.
+
+```bash
+python -m research_v2.runner ablation-1m --horizon 60
+```
+
+### Power / MDE
+
+The power page reports approximate two-sided minimum detectable probability differences at 80% and 90% power. A configurable design effect penalizes nominal N for clustered/dependent observations.
+
+The page also estimates the detectable mean R for smaller trade-like samples.
+
+### Preregistered hypothesis registry
+
+The registry requires:
+
+- hypothesis ID/title/question;
+- dataset window;
+- primary outcome;
+- timeframe;
+- filters;
+- horizon;
+- expected direction;
+- statistic;
+- multiplicity family.
+
+Locking creates a SHA-256 hash over the confirmatory fields. Editing one of those fields invalidates verification.
+
+```bash
+python scripts/register_hypothesis.py hypothesis_draft.json
+```
+
+### Golden miniature dataset
+
+`tests/fixtures/golden_ohlcv.csv` is synthetic, redistributable and byte-stable. Its manifest records the expected row count, FVG count, first event and Git blob hash.
+
+This provides a permanent exact regression target in addition to the larger randomized synthetic demo.
+
+### Dataset preflight
+
+**Dataset preflight** is intentionally separate from active-contract construction. It does not mutate the current dataset.
+
+For ZIPs it inspects archive members, expanded/compressed size, supported market-data entries and small sidecars. For CSV/Parquet it inspects schema/row metadata. Direct DBN files expose metadata where available through the pinned Databento library.
+
+### Standard run capsules
+
+Serious calculations write `results/_run_records/*.json` containing:
+
+- command;
+- start/finish/elapsed time;
+- git commit where available;
+- Python/OS;
+- dependency fingerprint;
+- dataset pointer hash;
+- input/output file size and SHA-256;
+- run-specific parameters.
+
+### Stability atlas
+
+The published atlas shows timeframe, chronological and distance variation immediately.
+
+After local reproduction it also ingests generated multi-timeframe/year/distance/volatility/sensitivity tables and renders a timeframe × horizon heatmap when those columns are available.
+
+### Economic significance
+
+Only trade-like canonical CE output is converted into economic scenarios. The model applies explicit MNQ point/tick values, round-turn commission and slippage assumptions.
+
+Attraction probabilities are never converted into PnL without a defined execution rule.
+
+### v1 → v2 comparison
+
+The comparison page never fabricates corrected results. It appears only after the corresponding v2 output exists locally and reports:
+
+```text
+published v1 | corrected v2 | change | reason for correction
+```
+
+### Versioned GitHub Releases
+
+`.github/workflows/release.yml` supports both `v*` tags and manual workflow dispatch.
+
+`scripts/build_release.py` creates a clean ZIP, standalone HTML report and checksum manifest while excluding local data, results, environments and generated site output.
