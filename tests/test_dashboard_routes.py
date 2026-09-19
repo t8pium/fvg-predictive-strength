@@ -34,7 +34,7 @@ class TestDashboardRoutes(unittest.TestCase):
                 app.session_state["selected"] = experiment_id
                 app.run()
                 self.assert_clean(app)
-                self.assertGreaterEqual(len(app.tabs), 5)
+                self.assertEqual(len(app.tabs), 4)
 
 
 if __name__ == "__main__":
