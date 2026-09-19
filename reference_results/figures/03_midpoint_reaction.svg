@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="460" viewBox="0 0 920 460">
+<rect width="100%" height="100%" fill="#0d1117"/>
+<text x="78" y="32" fill="#f0f6fc" font-family="Arial,sans-serif" font-size="22" font-weight="700">Midpoint / CE rejection race</text>
+<text x="78" y="53" fill="#8b949e" font-family="Arial,sans-serif" font-size="13">Published rejection rates after exact midpoint trade</text>
+<line x1="78" y1="382" x2="896" y2="382" stroke="#30363d"/>
+<line x1="78" y1="382.0" x2="896" y2="382.0" stroke="#21262d"/>
+<text x="68" y="386.0" text-anchor="end" fill="#8b949e" font-family="Arial,sans-serif" font-size="11">-6.52%</text>
+<line x1="78" y1="303.5" x2="896" y2="303.5" stroke="#21262d"/>
+<text x="68" y="307.5" text-anchor="end" fill="#8b949e" font-family="Arial,sans-serif" font-size="11">10.32%</text>
+<line x1="78" y1="225.0" x2="896" y2="225.0" stroke="#21262d"/>
+<text x="68" y="229.0" text-anchor="end" fill="#8b949e" font-family="Arial,sans-serif" font-size="11">27.16%</text>
+<line x1="78" y1="146.5" x2="896" y2="146.5" stroke="#21262d"/>
+<text x="68" y="150.5" text-anchor="end" fill="#8b949e" font-family="Arial,sans-serif" font-size="11">43.99%</text>
+<line x1="78" y1="68.0" x2="896" y2="68.0" stroke="#21262d"/>
+<text x="68" y="72.0" text-anchor="end" fill="#8b949e" font-family="Arial,sans-serif" font-size="11">60.83%</text>
+<rect x="110.3" y="108.4" width="45.8" height="243.2" rx="3" fill="#58a6ff"/>
+<rect x="163.5" y="112.7" width="45.8" height="238.9" rx="3" fill="#d2a8ff"/>
+<text x="159.8" y="406" text-anchor="middle" fill="#8b949e" font-family="Arial,sans-serif" font-size="11">1m</text>
+<rect x="273.9" y="98.4" width="45.8" height="253.2" rx="3" fill="#58a6ff"/>
+<rect x="327.1" y="109.8" width="45.8" height="241.8" rx="3" fill="#d2a8ff"/>
+<text x="323.4" y="406" text-anchor="middle" fill="#8b949e" font-family="Arial,sans-serif" font-size="11">5m</text>
+<rect x="437.5" y="99.0" width="45.8" height="252.6" rx="3" fill="#58a6ff"/>
+<rect x="490.7" y="111.3" width="45.8" height="240.3" rx="3" fill="#d2a8ff"/>
+<text x="487.0" y="406" text-anchor="middle" fill="#8b949e" font-family="Arial,sans-serif" font-size="11">15m</text>
+<rect x="601.1" y="108.1" width="45.8" height="243.5" rx="3" fill="#58a6ff"/>
+<rect x="654.3" y="109.8" width="45.8" height="241.8" rx="3" fill="#d2a8ff"/>
+<text x="650.6" y="406" text-anchor="middle" fill="#8b949e" font-family="Arial,sans-serif" font-size="11">1H</text>
+<rect x="764.7" y="108.4" width="45.8" height="243.2" rx="3" fill="#58a6ff"/>
+<rect x="817.9" y="128.9" width="45.8" height="222.7" rx="3" fill="#d2a8ff"/>
+<text x="814.2" y="406" text-anchor="middle" fill="#8b949e" font-family="Arial,sans-serif" font-size="11">4H</text>
+<rect x="670" y="24" width="12" height="12" fill="#58a6ff"/><text x="688" y="34" fill="#c9d1d9" font-family="Arial,sans-serif" font-size="11">FVG</text>
+<rect x="790" y="24" width="12" height="12" fill="#d2a8ff"/><text x="808" y="34" fill="#c9d1d9" font-family="Arial,sans-serif" font-size="11">Control</text>
+</svg>
