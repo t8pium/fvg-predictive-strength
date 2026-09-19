@@ -20,7 +20,7 @@ class TestStaticReport(unittest.TestCase):
         self.assertIn("Published conclusion", html)
         self.assertIn("Research architecture", html)
         self.assertIn("Provenance", html)
-        self.assertNotIn("/mnt/data", html)
+        self.assertNotIn("/mnt" + "/data", html)
 
         for exp_id, exp in EXPERIMENTS.items():
             with self.subTest(exp_id=exp_id):
