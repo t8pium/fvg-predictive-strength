@@ -917,6 +917,13 @@ def home_page() -> None:
             info_card(title, body)
 
     section_header(
+        "Architecture",
+        "How four computational suites become nine experiments",
+        "The heavy calculations are shared rather than duplicated. This is why one successful canonical run can populate several experiment pages.",
+    )
+    st.markdown(research_flow_svg(), unsafe_allow_html=True)
+
+    section_header(
         "Visual summary",
         "Two charts that capture the central result",
         "The first shows the matched attraction shrinking with horizon. The second shows how the five-bar effect changes between the early and later sample.",
@@ -1007,6 +1014,29 @@ def experiment_page(exp_id: str) -> None:
 
     callout("What this experiment adds", exp["takeaway"])
 
+    section_header(
+        "Visual model",
+        "What this experiment is actually testing",
+        "The diagram is conceptual. The exact numerical rules remain the canonical code and method specification.",
+    )
+    st.markdown(experiment_svg(exp_id), unsafe_allow_html=True)
+
+    prov = EXPERIMENT_PROVENANCE[exp_id]
+    with st.expander("Experiment provenance · sample · controls · seed · outputs"):
+        rows = [
+            ("Canonical suite", prov["suite"]),
+            ("Input", prov["input"]),
+            ("Published population", prov["population"]),
+            ("Controls", prov["controls"]),
+            ("Seed", prov["seed"]),
+            ("Primary outputs", ", ".join(prov["outputs"])),
+        ]
+        st.dataframe(
+            pd.DataFrame(rows, columns=["Field", "Published design"]),
+            width="stretch",
+            hide_index=True,
+        )
+
     results, method, reproduce, source = st.tabs(
         ["Results", "Method & limitations", "Reproduce", "Canonical source"]
     )
@@ -1055,8 +1085,30 @@ def sidebar() -> None:
     if st.button("Research overview", width="stretch"):
         st.session_state["page"] = "Home"
         st.rerun()
+
+    st.markdown("**Run & verify**")
+    if st.button("Quick demo", width="stretch"):
+        st.session_state["page"] = "Quick Demo"
+        st.rerun()
     if st.button("Reproduce / data setup", width="stretch"):
         st.session_state["page"] = "Data Setup"
+        st.rerun()
+    if st.button("Full reproduction", width="stretch"):
+        st.session_state["page"] = "Full Reproduction"
+        st.rerun()
+
+    st.markdown("**Inspect & export**")
+    if st.button("Diagnostics", width="stretch"):
+        st.session_state["page"] = "Diagnostics"
+        st.rerun()
+    if st.button("Report / export", width="stretch"):
+        st.session_state["page"] = "Report"
+        st.rerun()
+    if st.button("Performance", width="stretch"):
+        st.session_state["page"] = "Performance"
+        st.rerun()
+    if st.button("Research v2", width="stretch"):
+        st.session_state["page"] = "Research v2"
         st.rerun()
     if st.button("Local outputs", width="stretch"):
         st.session_state["page"] = "Generated Outputs"
@@ -1104,8 +1156,20 @@ def main() -> None:
         sidebar()
 
     page = st.session_state["page"]
-    if page == "Data Setup":
+    if page == "Quick Demo":
+        quick_demo_page()
+    elif page == "Data Setup":
         data_page()
+    elif page == "Full Reproduction":
+        full_reproduction_page()
+    elif page == "Diagnostics":
+        diagnostics_page()
+    elif page == "Performance":
+        performance_page()
+    elif page == "Research v2":
+        research_v2_page()
+    elif page == "Report":
+        report_page()
     elif page == "Generated Outputs":
         hero(
             "Local reproduction",
