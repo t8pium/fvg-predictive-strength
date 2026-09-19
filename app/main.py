@@ -195,8 +195,9 @@ def reproduce_panel(exp_id: str, exp: dict) -> None:
     dataset_summary()
     study, tf, ce_tfs, command = runner_config(exp_id, exp)
     st.code(command, language="bash")
-    if latest_success(study):
-        st.info(f"A successful {study} run already exists for the current dataset; rerunning is optional.")
+    if latest_success(study, tf=tf):
+        scope = f" at {TF_LABELS.get(tf, str(tf) + 'm')}" if tf is not None else ""
+        st.info(f"A successful {study} run{scope} already exists for the current dataset; rerunning is optional.")
     if st.button("Run canonical calculation", type="primary", key=f"run_{exp_id}", disabled=study == "ce-body" and not ce_tfs):
         live = st.empty()
         with st.spinner("Running preserved canonical analysis…"):
