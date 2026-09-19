@@ -18,6 +18,7 @@ from app.verification import verification_rows
 from fvg_research.dashboard_helpers import load_latest_success
 from fvg_research.dataset import current_pickle
 from fvg_research.report import write_report
+from fvg_research.run_record import write_run_record
 
 RESULTS = ROOT / "results"
 RUNNER = ROOT / "scripts" / "run_original.py"
@@ -217,12 +218,29 @@ def main(argv: list[str] | None = None) -> int:
     state["finished_unix"] = time.time()
     state["verification_rows"] = len(verification)
     state["report"] = str(REPORT_FILE.relative_to(ROOT))
+    record = write_run_record(
+        ROOT,
+        kind="full-reproduction",
+        command=[sys.executable, str(ROOT / "scripts" / "reproduce_full.py"), *sys.argv[1:]],
+        status="success",
+        started_unix=float(state["started_unix"]),
+        finished_unix=float(state["finished_unix"]),
+        inputs=[data, REFERENCE_PATH],
+        outputs=[STATE_FILE, VERIFY_FILE, REPORT_FILE],
+        extra={
+            "stages": state["stages"],
+            "verification_rows": len(verification),
+            "cached_stage_count": sum(1 for row in state["stages"] if row.get("status") == "cached"),
+        },
+    )
+    state["run_record"] = str(record.relative_to(ROOT))
     _write_state(state)
 
     print("\n=== Full reproduction complete ===")
     print(f"State: {STATE_FILE}")
     print(f"Published-vs-local verification: {VERIFY_FILE}")
     print(f"Self-contained research report: {REPORT_FILE}")
+    print(f"Run provenance capsule: {record}")
     print("Completed stages are cached by active-dataset timestamp. Re-running will skip them.")
     return 0
 
