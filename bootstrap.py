@@ -51,9 +51,11 @@ def installed_environment_is_healthy(py: Path, fingerprint: str) -> bool:
         if stamp.get("fingerprint") != fingerprint:
             return False
         code = (
-            "import pathlib,sys; "
-            "import fvg_research,streamlit,databento,duckdb; "
+            "import importlib.util,pathlib,sys; "
+            "import fvg_research; "
             f"assert pathlib.Path(fvg_research.__file__).resolve().is_relative_to(pathlib.Path({str(ROOT)!r}).resolve()); "
+            "assert all(importlib.util.find_spec(name) is not None for name in "
+            "('streamlit','databento','duckdb','pandas','numpy')); "
             "assert sys.version_info[:2] in {(3,11),(3,12),(3,13)}"
         )
         probe = subprocess.run(
