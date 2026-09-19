@@ -10,6 +10,7 @@ import pandas as pd
 from fvg_research.bars import market_state
 from fvg_research.dataset import current_pickle
 from fvg_research.fvg import detect_fvgs
+from research_v2.ce_inference import ce_reinference
 from research_v2.methods import (
     benjamini_hochberg,
     bounded_touch_outcome,
@@ -229,7 +230,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Corrected/extended Research v2 runner. Results are new research, not published v1 evidence."
     )
-    parser.add_argument("study", choices=["attraction-1m", "age-decay-1m", "walk-forward-1m"])
+    parser.add_argument("study", choices=["attraction-1m", "age-decay-1m", "walk-forward-1m", "ce-reinfer"])
     parser.add_argument("--horizon", type=int, default=60)
     parser.add_argument("--max-events", type=int, default=10_000)
     parser.add_argument("--controls", type=int, default=3)
@@ -237,8 +238,42 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--bootstrap", type=int, default=500)
     args = parser.parse_args(argv)
 
-    bars = load_bars()
     OUT.mkdir(parents=True, exist_ok=True)
+
+    if args.study == "ce-reinfer":
+        ce_dir = ROOT / "results" / "ce_body"
+        preferred = ce_dir / "trades.pkl"
+        candidates = [preferred] if preferred.is_file() else sorted(ce_dir.glob("trades*.pkl"), key=lambda path: path.stat().st_mtime_ns, reverse=True)
+        if not candidates:
+            print("ERROR: No canonical CE trade-level output found. Run the ce-body suite first.", file=sys.stderr)
+            return 2
+        trade_file = candidates[0]
+        trades = pd.read_pickle(trade_file)
+        frame = ce_reinference(
+            trades,
+            band_width=0.05,
+            min_n=20,
+            n_boot=args.bootstrap,
+            seed=args.seed,
+        )
+        frame.to_csv(OUT / "ce_reinference.csv", index=False)
+        payload = {
+            "research_version": "v2",
+            "published_reference": False,
+            "source_trade_file": str(trade_file.relative_to(ROOT)),
+            "corrections": [
+                "canonical trade mechanics reused unchanged",
+                "uncertainty clustered by CME trade date",
+                "5%-wide depth cells evaluated together",
+                "Benjamini-Hochberg correction across tested timeframe/depth cells",
+            ],
+            "cells": frame.to_dict(orient="records"),
+        }
+        (OUT / "ce_reinference.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        print(json.dumps(payload, indent=2))
+        return 0
+
+    bars = load_bars()
 
     if args.study == "attraction-1m":
         result = corrected_attraction(
