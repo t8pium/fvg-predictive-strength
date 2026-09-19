@@ -12,8 +12,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from fvg_research.dataset import current_pickle
+
 ORIGINAL = ROOT / "src" / "original"
-DATA = ROOT / "data" / "processed" / "active_mnq.pkl"
 RESULTS = ROOT / "results"
 RUNS = RESULTS / "_runs"
 
@@ -41,7 +45,8 @@ def canonical_source_digest(text: str) -> str:
 
 
 class PathRewriter(ast.NodeTransformer):
-    def __init__(self) -> None:
+    def __init__(self, data_path: Path) -> None:
+        self.data_path = data_path
         self.replacements = 0
 
     def visit_Constant(self, node: ast.Constant):
@@ -49,7 +54,7 @@ class PathRewriter(ast.NodeTransformer):
             return node
         legacy = "/mnt" + "/data"
         replacements = {
-            legacy + "/active_mnq.pkl": str(DATA),
+            legacy + "/active_mnq.pkl": str(self.data_path),
             legacy + "/fvg_study_outputs": str(RESULTS / "detailed_1m"),
             legacy + "/fvg_strength_project_single": str(RESULTS / "multi_tf"),
             legacy + "/fvg_ce_study": str(RESULTS / "ce_body"),
@@ -64,13 +69,18 @@ class PathRewriter(ast.NodeTransformer):
         return node
 
 
-def patch_source(text: str, name: str) -> str:
+def patch_source(text: str, name: str, data_path: Path | None = None) -> str:
+    data_path = data_path or current_pickle()
     tree = ast.parse(text, filename=name)
-    rewriter = PathRewriter()
+    rewriter = PathRewriter(data_path)
     tree = rewriter.visit(tree)
     ast.fix_missing_locations(tree)
     legacy = "/mnt" + "/data"
-    remaining = [n.value for n in ast.walk(tree) if isinstance(n, ast.Constant) and isinstance(n.value, str) and legacy in n.value]
+    remaining = [
+        node.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Constant) and isinstance(node.value, str) and legacy in node.value
+    ]
     if remaining:
         raise ValueError(f"Unpatched canonical path(s) in {name}: {remaining}")
     if rewriter.replacements < 2:
@@ -83,7 +93,8 @@ def snapshot_outputs() -> dict[str, int]:
         return {}
     return {
         str(path.relative_to(ROOT)): path.stat().st_mtime_ns
-        for path in RESULTS.rglob("*") if path.is_file() and RUNS not in path.parents
+        for path in RESULTS.rglob("*")
+        if path.is_file() and RUNS not in path.parents
     }
 
 
@@ -115,25 +126,29 @@ def main(argv: list[str] | None = None) -> int:
     except ValueError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
-    if not DATA.is_file():
-        print(f"ERROR: Missing {DATA}. Prepare the dataset first.", file=sys.stderr)
+
+    data = current_pickle()
+    if not data.is_file():
+        print("ERROR: No active MNQ dataset is prepared. Use Data Setup first.", file=sys.stderr)
         return 2
 
     RESULTS.mkdir(parents=True, exist_ok=True)
     RUNS.mkdir(parents=True, exist_ok=True)
     for folder in ("detailed_1m", "multi_tf", "midpoint", "ce_body"):
         (RESULTS / folder).mkdir(parents=True, exist_ok=True)
+
     source = ORIGINAL / SCRIPTS[args.study]
     source_text = source.read_text(encoding="utf-8")
     digest = canonical_source_digest(source_text)
     if digest != SOURCE_HASHES[source.name]:
         print(
             f"ERROR: Canonical source hash changed for {source.name}. Audit the research change "
-            "and update the declared hash deliberately.", file=sys.stderr,
+            "and update the declared hash deliberately.",
+            file=sys.stderr,
         )
         return 2
     try:
-        code = patch_source(normalized_source(source_text), source.name)
+        code = patch_source(normalized_source(source_text), source.name, data)
     except Exception as exc:
         print(f"ERROR: Could not create portable source: {exc}", file=sys.stderr)
         return 2
@@ -145,6 +160,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.study == "ce-body":
         environment["CE_TFS"] = ",".join(map(str, ce_values))
     command_extra = [str(args.tf)] if args.study == "midpoint" else []
+
     before = snapshot_outputs()
     started = datetime.now(timezone.utc)
     status = "failed"
@@ -154,36 +170,50 @@ def main(argv: list[str] | None = None) -> int:
         with tempfile.TemporaryDirectory(prefix="fvg_canonical_") as temporary:
             patched = Path(temporary) / source.name
             patched.write_text(code, encoding="utf-8")
-            process = subprocess.run(
-                [sys.executable, str(patched), *command_extra], cwd=ROOT, env=environment
-            )
+            process = subprocess.run([sys.executable, str(patched), *command_extra], cwd=ROOT, env=environment)
             exit_code = process.returncode
             if exit_code:
                 raise subprocess.CalledProcessError(exit_code, process.args)
             if args.study == "ce-body":
                 suffix = "_" + "_".join(map(str, ce_values)) if len(ce_values) < len(VALID_TFS) else ""
                 trade_file = RESULTS / "ce_body" / f"trades{suffix}.pkl"
-                subprocess.run([
-                    sys.executable, str(ROOT / "scripts" / "postprocess_body_bands.py"),
-                    "--trade-file", str(trade_file),
-                    "--output", str(RESULTS / "ce_body" / "body_depth_5pct.csv"),
-                ], check=True, cwd=ROOT, env=environment)
+                subprocess.run(
+                    [
+                        sys.executable,
+                        str(ROOT / "scripts" / "postprocess_body_bands.py"),
+                        "--trade-file",
+                        str(trade_file),
+                        "--output",
+                        str(RESULTS / "ce_body" / "body_depth_5pct.csv"),
+                    ],
+                    check=True,
+                    cwd=ROOT,
+                    env=environment,
+                )
             status = "success"
             exit_code = 0
     except Exception as exc:
         error = str(exc)
         if isinstance(exc, subprocess.CalledProcessError):
             exit_code = exc.returncode
+
     finished = datetime.now(timezone.utc)
     after = snapshot_outputs()
     changed = sorted(path for path, mtime in after.items() if before.get(path) != mtime)
     manifest = {
-        "study": args.study, "status": status, "exit_code": exit_code,
-        "started_utc": started.isoformat(), "finished_utc": finished.isoformat(),
-        "source": str(source.relative_to(ROOT)), "source_sha256": digest,
-        "tf": args.tf, "ce_tfs": ce_values if args.study == "ce-body" else None,
-        "data_path": str(DATA.relative_to(ROOT)), "data_mtime_ns": DATA.stat().st_mtime_ns,
-        "generated_files": changed, "error": error,
+        "study": args.study,
+        "status": status,
+        "exit_code": exit_code,
+        "started_utc": started.isoformat(),
+        "finished_utc": finished.isoformat(),
+        "source": str(source.relative_to(ROOT)),
+        "source_sha256": digest,
+        "tf": args.tf,
+        "ce_tfs": ce_values if args.study == "ce-body" else None,
+        "data_path": str(data.relative_to(ROOT)),
+        "data_mtime_ns": data.stat().st_mtime_ns,
+        "generated_files": changed,
+        "error": error,
     }
     run_name = f"{started.strftime('%Y%m%dT%H%M%S')}_{args.study}.json"
     (RUNS / run_name).write_text(json.dumps(manifest, indent=2), encoding="utf-8")
