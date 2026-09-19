@@ -176,6 +176,7 @@ Current executable studies:
 
 ```bash
 python -m research_v2.runner attraction-1m --horizon 60
+python -m research_v2.runner age-decay-1m
 python -m research_v2.runner walk-forward-1m --horizon 60
 ```
 
