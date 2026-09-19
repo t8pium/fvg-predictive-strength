@@ -76,17 +76,25 @@ def main() -> None:
         raise SystemExit("A 64-bit Python installation is required for the market dataset.")
 
     py = venv_python()
-    if VENV.exists() and not venv_interpreter_supported(py):
+    fingerprint = dependency_fingerprint()
+
+    # Fast repeat-launch path: one health probe is enough when the existing
+    # private environment is intact. Only perform the second interpreter probe
+    # when the environment is already known to be unhealthy.
+    healthy = installed_environment_is_healthy(py, fingerprint) if py.is_file() else False
+    if py.is_file() and not healthy and VENV.exists() and not venv_interpreter_supported(py):
         if VENV.resolve().parent != ROOT.resolve() or VENV.name != ".fvg_venv":
             raise SystemExit(f"Refusing to replace unexpected environment path: {VENV}")
         print("\nReplacing an incomplete or incompatible private environment...", flush=True)
         shutil.rmtree(VENV)
+        healthy = False
+
     if not py.is_file():
         print("\nCreating an isolated environment for the FVG study...", flush=True)
         run([sys.executable, "-m", "venv", str(VENV)])
+        healthy = False
 
-    fingerprint = dependency_fingerprint()
-    if not installed_environment_is_healthy(py, fingerprint):
+    if not healthy:
         print("\nInstalling the pinned research environment (first launch can take several minutes)...", flush=True)
         run([str(py), "-m", "pip", "install", "--upgrade", "pip"])
         run([str(py), "-m", "pip", "install", "-r", str(REQ)])
