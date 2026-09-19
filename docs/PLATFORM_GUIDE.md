@@ -178,6 +178,7 @@ Current executable studies:
 python -m research_v2.runner attraction-1m --horizon 60
 python -m research_v2.runner age-decay-1m
 python -m research_v2.runner walk-forward-1m --horizon 60
+python -m research_v2.runner ce-reinfer --bootstrap 500
 ```
 
 All Research v2 output is labeled **NEW / UNPUBLISHED RESEARCH** until it has been run on licensed data and reviewed.
