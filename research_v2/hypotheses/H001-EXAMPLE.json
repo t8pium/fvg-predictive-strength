@@ -1,0 +1,18 @@
+{
+  "hypothesis_id": "H001-EXAMPLE",
+  "title": "Example preregistration: corrected 1m 60-minute attraction",
+  "question": "After corrected eligibility and contract-boundary censoring, is the 1m FVG-minus-control touch difference positive at 60 minutes?",
+  "dataset_window": "Declare before running; example only",
+  "primary_outcome": "FVG minus parent-averaged matched-control near-edge touch probability",
+  "timeframe": "1m",
+  "filters": [
+    "minimum FVG width = 1 tick",
+    "full 60-bar horizon required"
+  ],
+  "horizon": "60 native bars",
+  "expected_direction": "positive",
+  "statistic": "parent-paired mean probability difference with CME-trade-date cluster bootstrap",
+  "correction_family": "single preregistered primary hypothesis",
+  "status": "example-template",
+  "note": "Copy this file, choose a new hypothesis_id and dataset window, then lock it with scripts/register_hypothesis.py before viewing the result."
+}
