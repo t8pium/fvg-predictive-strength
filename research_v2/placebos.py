@@ -124,27 +124,31 @@ def placebo_suite(
         "kind": "negative control",
     })
 
-    shifted_index = eligible_state.index + pd.Timedelta(minutes=max(390, horizon + 30))
-    valid = shifted_index.intersection(state.index)
-    if len(valid) >= 20:
-        original_positions = eligible_state.index.get_indexer(valid - pd.Timedelta(minutes=max(390, horizon + 30)))
-        original_positions = original_positions[original_positions >= 0]
-        shifted_state = state.reindex(valid).dropna(subset=["atr14", "close"])
-        original = aligned.iloc[original_positions[: len(shifted_state)]]
-        shifted_state = shifted_state.iloc[: len(original)]
-        shifted = _geometry_zone(
-            shifted_state,
-            original["direction"].to_numpy(),
-            original["width_atr"].to_numpy(),
-            original["distance_atr"].to_numpy(),
-        )
-        hit = touch_at_horizon(bars, shifted, horizon).astype(float)
-        rows.append({
-            "series": "Time-shifted geometry",
-            "N": int(len(hit)),
-            "touch_rate": float(hit.mean()),
-            "difference_vs_real_pp": float((hit.mean() - real.mean()) * 100),
-            "kind": "negative control",
-        })
+    offset = pd.Timedelta(minutes=max(390, horizon + 30))
+    original_index = eligible_state.index
+    shifted_index = original_index + offset
+    valid_mask = shifted_index.isin(state.index)
+    if int(valid_mask.sum()) >= 20:
+        original = aligned.loc[original_index[valid_mask]].copy()
+        shifted_times = shifted_index[valid_mask]
+        shifted_state = state.reindex(shifted_times)
+        complete = shifted_state[["atr14", "close"]].notna().all(axis=1).to_numpy()
+        shifted_state = shifted_state.iloc[np.flatnonzero(complete)].copy()
+        original = original.iloc[np.flatnonzero(complete)].copy()
+        if len(original) >= 20:
+            shifted = _geometry_zone(
+                shifted_state,
+                original["direction"].to_numpy(),
+                original["width_atr"].to_numpy(),
+                original["distance_atr"].to_numpy(),
+            )
+            hit = touch_at_horizon(bars, shifted, horizon).astype(float)
+            rows.append({
+                "series": "Time-shifted geometry",
+                "N": int(len(hit)),
+                "touch_rate": float(hit.mean()),
+                "difference_vs_real_pp": float((hit.mean() - real.mean()) * 100),
+                "kind": "negative control",
+            })
 
     return pd.DataFrame(rows)
