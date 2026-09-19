@@ -8,13 +8,34 @@ from .controls import matched_controls
 from .fvg import detect_fvgs, full_at_horizon, midpoint_at_horizon, touch_at_horizon
 
 
-def event_catalog(bars: pd.DataFrame) -> pd.DataFrame:
-    """Build a filterable event table from completed-candle FVGs."""
+def event_catalog(bars: pd.DataFrame, *, include_market_state: bool = False) -> pd.DataFrame:
+    """Build a filterable event table from completed-candle FVGs.
+
+    The default path is intentionally fast: session/time-of-day are derived directly
+    from event timestamps. The expensive rolling volatility-regime state is only
+    calculated when explicitly requested by the explorer.
+    """
     events = detect_fvgs(bars)
-    state = market_state(bars)
-    columns = ["session", "tod_30m", "vol_regime", "trend"]
-    available = [column for column in columns if column in state.columns]
-    events = events.join(state[available], how="left")
+    eastern = events.index.tz_convert("America/New_York")
+    minute_of_day = eastern.hour * 60 + eastern.minute
+    events["session"] = np.select(
+        [
+            (minute_of_day >= 18 * 60) | (minute_of_day < 2 * 60),
+            (minute_of_day >= 2 * 60) & (minute_of_day < 8 * 60),
+            (minute_of_day >= 8 * 60) & (minute_of_day < 9 * 60 + 30),
+            (minute_of_day >= 9 * 60 + 30) & (minute_of_day < 12 * 60),
+            (minute_of_day >= 12 * 60) & (minute_of_day < 13 * 60 + 30),
+            (minute_of_day >= 13 * 60 + 30) & (minute_of_day < 16 * 60),
+        ],
+        ["asia", "london", "ny_premarket", "ny_am", "ny_lunch", "ny_pm"],
+        default="postmarket",
+    )
+    events["tod_30m"] = (minute_of_day // 30).astype(int)
+
+    if include_market_state:
+        state = market_state(bars)
+        events = events.join(state[["vol_regime", "trend"]], how="left")
+
     events["timestamp"] = events.index
     events["direction_label"] = np.where(events["direction"].eq(1), "Bullish", "Bearish")
     events["year"] = events.index.year
