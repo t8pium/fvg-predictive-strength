@@ -185,9 +185,10 @@ def dataset_comparison(reference: dict) -> list[dict[str, object]]:
     return rows
 
 
-def latest_success(study: str) -> dict | None:
+def latest_success(study: str, tf: int | None = None) -> dict | None:
     data = current_pickle()
-    return load_latest_success(RESULTS, data, study) if data.is_file() else None
+    key = f"{study}_tf{tf}" if tf is not None else study
+    return load_latest_success(RESULTS, data, key) if data.is_file() else None
 
 
 def result_files() -> list[Path]:
