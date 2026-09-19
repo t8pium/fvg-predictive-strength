@@ -199,9 +199,10 @@ Current runnable studies:
 python -m research_v2.runner attraction-1m --horizon 60
 python -m research_v2.runner age-decay-1m
 python -m research_v2.runner walk-forward-1m --horizon 60
+python -m research_v2.runner ce-reinfer --bootstrap 500
 ~~~
 
-Every v2 result is labeled **NEW / UNPUBLISHED RESEARCH** until it has been run on licensed history and reviewed.
+The CE re-inference command reuses the canonical trade rows but clusters uncertainty by CME trade date and applies Benjamini-Hochberg FDR correction across the tested timeframe/depth cells. Every v2 result is labeled **NEW / UNPUBLISHED RESEARCH** until it has been run on licensed history and reviewed.
 
 ## Repository map
 
