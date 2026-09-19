@@ -15,6 +15,14 @@ The project is built for two separate jobs:
 1. **Inspect the completed research immediately** — no Databento account or local market data required.
 2. **Reproduce the calculations independently** — using your own licensed data and the preserved canonical scripts.
 
+### Start here
+
+- **New to the project?** Read [How to read the study](docs/READING_GUIDE.md), then open the Research Lab.
+- **Want the exact procedures?** See [Experiment documentation](docs/EXPERIMENTS.md).
+- **Want the caveats first?** See the [Scientific and reproducibility audit](docs/SCIENTIFIC_AUDIT.md).
+- **Want to verify provenance?** See [reference_results/manifest.json](reference_results/manifest.json).
+- **Want to rerun it?** Use `START_HERE.bat` and open **Reproduce / data setup**.
+
 ## Study at a glance
 
 | Question | Published result |
