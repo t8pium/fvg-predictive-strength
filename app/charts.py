@@ -5,15 +5,40 @@ import plotly.graph_objects as go
 
 
 def _base(fig: go.Figure, title: str, y_title: str = "") -> go.Figure:
+    """Apply one quiet, readable visual system to every published chart."""
     fig.update_layout(
-        title=title,
-        height=420,
-        margin=dict(l=20, r=20, t=65, b=30),
-        legend_title_text="",
+        title=dict(text=title, x=0.01, xanchor="left", font=dict(size=16)),
+        height=400,
+        margin=dict(l=24, r=18, t=58, b=36),
+        legend=dict(
+            title_text="",
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="left",
+            x=0,
+        ),
         hovermode="x unified",
+        bargap=0.22,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
     )
-    if y_title:
-        fig.update_yaxes(title_text=y_title)
+    fig.update_xaxes(
+        showgrid=False,
+        automargin=True,
+        tickfont=dict(size=11),
+        title_font=dict(size=12),
+    )
+    fig.update_yaxes(
+        title_text=y_title or None,
+        automargin=True,
+        gridcolor="rgba(127,127,127,0.16)",
+        zeroline=True,
+        zerolinecolor="rgba(127,127,127,0.42)",
+        tickfont=dict(size=11),
+        title_font=dict(size=12),
+    )
+    fig.update_traces(hoverlabel=dict(namelength=-1))
     return fig
 
 
