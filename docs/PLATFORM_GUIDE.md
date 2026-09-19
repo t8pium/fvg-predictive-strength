@@ -79,7 +79,7 @@ Use `--force` only when you intentionally want to recompute every stage.
 - deterministic conceptual diagrams;
 - committed reference figures.
 
-The GitHub Pages workflow generates and deploys the report on pushes to `main`.
+The public copy is hosted by the existing `t8pium.github.io` portfolio Pages site. The repository generator remains the source for downloadable/offline report builds.
 
 Local generation:
 
