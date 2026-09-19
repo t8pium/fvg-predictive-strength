@@ -48,6 +48,17 @@ from .ui import (
     sidebar_status,
 )
 from .verification import verification_rows
+from .v4_pages import (
+    data_preflight_page,
+    economics_page,
+    event_explorer_page,
+    hypothesis_registry_page,
+    power_page,
+    release_provenance_page,
+    scientific_stress_page,
+    stability_atlas_page,
+    v1_v2_comparison_page,
+)
 
 REFERENCE = json.loads((ROOT / "reference_results" / "reference_metrics.json").read_text(encoding="utf-8"))
 PROVENANCE = json.loads((ROOT / "reference_results" / "manifest.json").read_text(encoding="utf-8"))
@@ -1226,8 +1237,20 @@ def sidebar() -> None:
         st.rerun()
 
     st.markdown("**Inspect & export**")
+    if st.button("Event explorer", width="stretch"):
+        st.session_state["page"] = "Event Explorer"
+        st.rerun()
     if st.button("Diagnostics", width="stretch"):
         st.session_state["page"] = "Diagnostics"
+        st.rerun()
+    if st.button("Stability atlas", width="stretch"):
+        st.session_state["page"] = "Stability Atlas"
+        st.rerun()
+    if st.button("Power / MDE", width="stretch"):
+        st.session_state["page"] = "Power"
+        st.rerun()
+    if st.button("Economic significance", width="stretch"):
+        st.session_state["page"] = "Economics"
         st.rerun()
     if st.button("Report / export", width="stretch"):
         st.session_state["page"] = "Report"
@@ -1235,8 +1258,25 @@ def sidebar() -> None:
     if st.button("Performance", width="stretch"):
         st.session_state["page"] = "Performance"
         st.rerun()
+
+    st.markdown("**Research discipline**")
+    if st.button("Placebos / ablations", width="stretch"):
+        st.session_state["page"] = "Stress Tests"
+        st.rerun()
+    if st.button("Hypothesis registry", width="stretch"):
+        st.session_state["page"] = "Hypothesis Registry"
+        st.rerun()
+    if st.button("Dataset preflight", width="stretch"):
+        st.session_state["page"] = "Data Preflight"
+        st.rerun()
     if st.button("Research v2", width="stretch"):
         st.session_state["page"] = "Research v2"
+        st.rerun()
+    if st.button("v1 vs v2", width="stretch"):
+        st.session_state["page"] = "V1 V2"
+        st.rerun()
+    if st.button("Releases / provenance", width="stretch"):
+        st.session_state["page"] = "Releases"
         st.rerun()
     if st.button("Local outputs", width="stretch"):
         st.session_state["page"] = "Generated Outputs"
@@ -1290,12 +1330,30 @@ def main() -> None:
         data_page()
     elif page == "Full Reproduction":
         full_reproduction_page()
+    elif page == "Event Explorer":
+        event_explorer_page()
     elif page == "Diagnostics":
         diagnostics_page()
+    elif page == "Stability Atlas":
+        stability_atlas_page(REFERENCE)
+    elif page == "Power":
+        power_page()
+    elif page == "Economics":
+        economics_page()
+    elif page == "Stress Tests":
+        scientific_stress_page()
+    elif page == "Hypothesis Registry":
+        hypothesis_registry_page()
+    elif page == "Data Preflight":
+        data_preflight_page()
     elif page == "Performance":
         performance_page()
     elif page == "Research v2":
         research_v2_page()
+    elif page == "V1 V2":
+        v1_v2_comparison_page(REFERENCE)
+    elif page == "Releases":
+        release_provenance_page()
     elif page == "Report":
         report_page()
     elif page == "Generated Outputs":
