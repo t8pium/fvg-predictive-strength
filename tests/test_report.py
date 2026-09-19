@@ -1,5 +1,6 @@
 import json
 import tempfile
+from html import escape
 import unittest
 from pathlib import Path
 
@@ -24,7 +25,7 @@ class TestStaticReport(unittest.TestCase):
         for exp_id, exp in EXPERIMENTS.items():
             with self.subTest(exp_id=exp_id):
                 self.assertIn(f'id="exp-{exp_id}"', html)
-                self.assertIn(exp["title"], html)
+                self.assertIn(escape(exp["title"]), html)
 
     def test_report_can_be_written_as_one_self_contained_html_file(self):
         with tempfile.TemporaryDirectory() as directory:
