@@ -14,3 +14,5 @@ Key changes:
 - deterministic tests for dataset-generation switching.
 
 The scientific limitations documented in SCIENTIFIC_AUDIT.md remain intentionally unchanged.
+
+The v2 shell is covered by dashboard-route, dataset-pointer, reference-figure, portability and existing synthetic research tests.
