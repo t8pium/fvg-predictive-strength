@@ -16,3 +16,7 @@ Key changes:
 The scientific limitations documented in SCIENTIFIC_AUDIT.md remain intentionally unchanged.
 
 The v2 shell is covered by dashboard-route, dataset-pointer, reference-figure, portability and existing synthetic research tests.
+
+## Readability pass
+
+The Research Lab now uses a shared visual system, clearer page hierarchy, glossary/reading guidance, experiment tags, stronger interpretation guardrails, improved reproduction flow, and consistent chart styling. A regression test also protects the fast repeat-launch path from dependency reinstalls.
