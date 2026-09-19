@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 import tempfile
+import time
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -38,6 +39,40 @@ def _symbol_column(frame: pd.DataFrame) -> str:
         "Input has no resolved contract symbol. Native DBN is decoded with "
         "map_symbols=True; for a split Databento batch, include its symbology JSON sidecar."
     )
+
+
+def _replace_with_retry(
+    source: Path,
+    target: Path,
+    *,
+    attempts: int = 40,
+    delay_seconds: float = 0.25,
+) -> None:
+    """Replace target robustly when Windows briefly holds an existing file open."""
+    if attempts < 1:
+        raise ValueError("attempts must be >= 1")
+    last_error: OSError | None = None
+    for attempt in range(1, attempts + 1):
+        try:
+            source.replace(target)
+            return
+        except PermissionError as exc:
+            last_error = exc
+        except OSError as exc:
+            # Windows sharing/lock violations are commonly WinError 32 or 33.
+            # Other operating-system errors should surface immediately.
+            if getattr(exc, "winerror", None) not in {32, 33}:
+                raise
+            last_error = exc
+        if attempt < attempts:
+            time.sleep(delay_seconds)
+
+    raise RuntimeError(
+        f"Could not replace {target.name} because another Windows process kept it locked "
+        f"for about {attempts * delay_seconds:.1f} seconds. Close any Python/experiment "
+        "process currently reading the dataset and click Import again. "
+        f"The previous valid dataset was left in place. Last error: {last_error}"
+    ) from last_error
 
 
 def build_active_contract(
@@ -170,10 +205,21 @@ def build_active_contract(
     temp_parquet = parquet_path.with_name(parquet_path.name + ".partial")
     temp_pickle = pickle_path.with_name(pickle_path.name + ".partial")
     temp_manifest = manifest_path.with_name(manifest_path.name + ".partial")
-    active.to_parquet(temp_parquet, index=False)
-    active.to_pickle(temp_pickle)
-    temp_manifest.write_text(json.dumps(summary, indent=2), encoding="utf-8")
-    temp_parquet.replace(parquet_path)
-    temp_pickle.replace(pickle_path)
-    temp_manifest.replace(manifest_path)
+    partials = (temp_parquet, temp_pickle, temp_manifest)
+    try:
+        active.to_parquet(temp_parquet, index=False)
+        active.to_pickle(temp_pickle)
+        temp_manifest.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+
+        # The pickle is the canonical input used by the preserved research scripts.
+        # Replace it first and tolerate transient Windows sharing violations.
+        _replace_with_retry(temp_pickle, pickle_path)
+        _replace_with_retry(temp_parquet, parquet_path)
+        _replace_with_retry(temp_manifest, manifest_path)
+    finally:
+        for partial in partials:
+            try:
+                partial.unlink(missing_ok=True)
+            except OSError:
+                pass
     return summary
