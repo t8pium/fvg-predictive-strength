@@ -166,3 +166,16 @@ RUNNER_TO_STUDY = {
 
 TF_LABELS = {1: "1m", 5: "5m", 15: "15m", 60: "1H", 240: "4H"}
 CE_TIMEFRAMES = [1, 2, 3, 5, 10, 15, 30, 60, 120, 240, 360, 480, 720, 1440]
+
+
+EXPERIMENT_TAGS = {
+    "raw_fill": ["Baseline", "1-minute", "Descriptive"],
+    "matched_attraction": ["Matched controls", "Primary falsification", "1m → 4H"],
+    "age_decay": ["Conditional survival", "Decay", "1-minute"],
+    "continuation": ["Directional return", "Matched moves", "1m → 4H"],
+    "retest": ["First touch", "Reaction", "1m → 4H"],
+    "midpoint": ["CE / midpoint", "Symmetric race", "1m → 4H"],
+    "body_acceptance": ["Execution study", "Close depth", "1m → 1D"],
+    "controls_regimes": ["Regression", "Distance controls", "60-minute"],
+    "oos": ["Chronological split", "Robustness", "Later data"],
+}
