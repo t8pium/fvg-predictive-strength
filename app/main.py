@@ -840,25 +840,36 @@ def research_v2_page() -> None:
     section_header("Run", "Choose a corrected v2 analysis")
     study = st.radio(
         "Study",
-        ["attraction-1m", "age-decay-1m", "walk-forward-1m"],
+        ["attraction-1m", "age-decay-1m", "walk-forward-1m", "ce-reinfer"],
         format_func=lambda value: {
             "attraction-1m": "Corrected 1m matched attraction",
             "age-decay-1m": "Corrected parent-paired 1m age decay",
             "walk-forward-1m": "Walk-forward corrected 1m attraction",
+            "ce-reinfer": "CE/body clustered re-inference + FDR correction",
         }[value],
     )
-    cols = st.columns(3)
-    horizon = cols[0].number_input("Horizon (1m bars)", min_value=1, value=60, step=1)
-    max_events = cols[1].number_input("Max FVG parents", min_value=100, value=10_000, step=500)
-    boot = cols[2].number_input("Bootstrap replications", min_value=100, value=500, step=100)
+
+    if study == "ce-reinfer":
+        callout(
+            "Uses canonical trade rows",
+            "Run the published CE/body suite first. Research v2 reuses those exact signal/trade mechanics and changes only the uncertainty and multiplicity layer.",
+        )
+        boot = st.number_input("Bootstrap replications", min_value=100, value=500, step=100)
+        horizon = 60
+        max_events = 10_000
+    else:
+        cols = st.columns(3)
+        horizon = cols[0].number_input("Horizon (1m bars)", min_value=1, value=60, step=1)
+        max_events = cols[1].number_input("Max FVG parents", min_value=100, value=10_000, step=500)
+        boot = cols[2].number_input("Bootstrap replications", min_value=100, value=500, step=100)
 
     if st.button("Run Research v2", type="primary", width="stretch"):
-        args = [
-            "-m", "research_v2.runner", study,
-            "--horizon", str(int(horizon)),
-            "--max-events", str(int(max_events)),
-            "--bootstrap", str(int(boot)),
-        ]
+        args = ["-m", "research_v2.runner", study, "--bootstrap", str(int(boot))]
+        if study != "ce-reinfer":
+            args += [
+                "--horizon", str(int(horizon)),
+                "--max-events", str(int(max_events)),
+            ]
         live = st.empty()
         rc, log = run_process(args, live_placeholder=live)
         st.session_state["v2_log"] = log
@@ -873,6 +884,7 @@ def research_v2_page() -> None:
         "attraction-1m": out / "corrected_attraction_1m.json",
         "age-decay-1m": out / "corrected_age_decay_1m.json",
         "walk-forward-1m": out / "walk_forward_1m.json",
+        "ce-reinfer": out / "ce_reinference.json",
     }
     file = file_map[study]
     if file.is_file():
@@ -887,26 +899,41 @@ def research_v2_page() -> None:
             cols[3].metric("Two-sided p", f"{float(result.get('p_two_sided', float('nan'))):.3f}")
             st.json(payload)
         else:
-            frame = pd.DataFrame(payload.get("windows", []))
+            records_key = "cells" if study == "ce-reinfer" else "windows"
+            frame = pd.DataFrame(payload.get(records_key, []))
             st.dataframe(frame, width="stretch", hide_index=True)
             if len(frame):
-                title = (
-                    "Corrected parent-paired age decay"
-                    if study == "age-decay-1m"
-                    else "Corrected walk-forward matched attraction"
-                )
-                x_axis = "window"
-                st.plotly_chart(
-                    px.line(
-                        frame,
-                        x=x_axis,
-                        y="difference_pp",
-                        markers=True,
-                        title=title,
-                    ),
-                    width="stretch",
-                    config=CHART_CONFIG,
-                )
+                if study == "ce-reinfer":
+                    st.plotly_chart(
+                        px.scatter(
+                            frame,
+                            x="mean_R",
+                            y="q_mean_R_bh",
+                            size="N",
+                            color="timeframe",
+                            hover_data=["depth_band", "p_mean_R_two_sided"],
+                            title="CE cells: mean R versus FDR-adjusted q-value",
+                        ),
+                        width="stretch",
+                        config=CHART_CONFIG,
+                    )
+                else:
+                    title = (
+                        "Corrected parent-paired age decay"
+                        if study == "age-decay-1m"
+                        else "Corrected walk-forward matched attraction"
+                    )
+                    st.plotly_chart(
+                        px.line(
+                            frame,
+                            x="window",
+                            y="difference_pp",
+                            markers=True,
+                            title=title,
+                        ),
+                        width="stretch",
+                        config=CHART_CONFIG,
+                    )
 
 
 def report_page() -> None:
