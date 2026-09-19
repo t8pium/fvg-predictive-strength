@@ -11,7 +11,7 @@ python scripts/download_databento.py
 python scripts/prepare_active_contract.py
 ```
 
-The prepared `active_mnq.pkl` contains at minimum:
+The preparation step writes a versioned dataset generation under `data/processed/datasets/` and updates `data/processed/current_dataset.json`. The canonical runner resolves that pointer automatically; legacy `data/processed/active_mnq.pkl` installs remain supported. The active pickle contains at minimum:
 
 - `ts_event` — UTC timestamp
 - `open`, `high`, `low`, `close`
