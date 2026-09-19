@@ -16,7 +16,7 @@ class TestDashboardRoutes(unittest.TestCase):
     def test_home_data_and_outputs(self):
         app = self.app().run()
         self.assert_clean(app)
-        self.assertTrue(any("Research Lab" in block.value for block in app.markdown))
+        self.assertTrue(any("FVG Predictive Strength" in block.value for block in app.markdown))
         for page in ("Data Setup", "Generated Outputs"):
             app.session_state["page"] = page
             app.run()
