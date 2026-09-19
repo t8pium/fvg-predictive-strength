@@ -20,3 +20,21 @@ The v2 shell is covered by dashboard-route, dataset-pointer, reference-figure, p
 ## Readability pass
 
 The Research Lab now uses a shared visual system, clearer page hierarchy, glossary/reading guidance, experiment tags, stronger interpretation guardrails, improved reproduction flow, and consistent chart styling. A regression test also protects the fast repeat-launch path from dependency reinstalls.
+
+
+## Research Platform v3
+
+The repository now behaves as a small research platform rather than only a reproduction wrapper:
+
+- deterministic no-data quick demo;
+- resumable/cached 12-stage full-study reproduction;
+- conceptual SVG explainer for every experiment;
+- experiment-level provenance panels;
+- statistical diagnostics and descriptive uncertainty views;
+- machine-specific benchmarking instead of invented timing claims;
+- self-contained downloadable HTML report;
+- generated GitHub Pages research report;
+- separate corrected/extended Research v2 methods and walk-forward runner;
+- repeat-launch bootstrap reduced to a single health probe on a healthy environment.
+
+Published v1 canonical scripts and frozen evidence remain unchanged.

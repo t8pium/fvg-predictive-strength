@@ -41,6 +41,14 @@ jobs:
           python scripts/prepare_active_contract.py --help
           python scripts/run_original.py --help
           python scripts/postprocess_body_bands.py --help
+          python scripts/run_demo.py --help
+          python scripts/reproduce_full.py --help
+          python scripts/benchmark.py --help
+          python scripts/generate_static_report.py --help
+          python -m research_v2.runner --help
+
+      - name: Generate static report
+        run: python scripts/generate_static_report.py --output site/index.html
 
       - name: Run synthetic and dashboard tests
         run: python -m unittest discover -s tests -v

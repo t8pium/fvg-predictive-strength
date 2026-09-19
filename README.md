@@ -1,149 +1,145 @@
 # Fair Value Gaps — Predictive Strength (MNQ)
 
 [![Verify research package](https://github.com/t8pium/fvg-predictive-strength/actions/workflows/verify-package.yml/badge.svg)](https://github.com/t8pium/fvg-predictive-strength/actions/workflows/verify-package.yml)
+[![Static research report](https://img.shields.io/badge/report-GitHub%20Pages-58a6ff)](https://t8pium.github.io/fvg-predictive-strength/)
 
-**2,303,483 active 1-minute bars · 454,197 detected 1m FVGs · 27 MNQ contracts · 2020–2026 · 9 experiments**
+**2,303,483 active 1-minute bars · 454,197 detected 1m FVGs · 27 MNQ contracts · 2020–2026 · 9 published experiments**
 
-This repository tests a narrower question than most Fair Value Gap discussions:
+> **Research question:** after controlling for distance, volatility, trend, session and ordinary price revisits, does the **FVG label itself** add useful predictive information?
 
-> **After controlling for distance, volatility, trend, session and ordinary price revisits, does the FVG label itself add useful predictive information?**
+**Published conclusion:** FVGs were revisited frequently, but most of the apparent “magnetism” was shared by comparable ordinary zones. The remaining effect was small, strongest shortly after formation, and inconsistent across longer horizons, timeframes and later data.
 
-The published answer is deliberately modest: **FVGs were revisited frequently, but most of the apparent “magnetism” was not unique to FVGs. The remaining effect was small, strongest shortly after formation, and inconsistent across longer horizons, timeframes and later data.**
+## Start here
 
-The project is built for two separate jobs:
-
-1. **Inspect the completed research immediately** — no Databento account or local market data required.
-2. **Reproduce the calculations independently** — using your own licensed data and the preserved canonical scripts.
-
-### Start here
-
-- **New to the project?** Read [How to read the study](docs/READING_GUIDE.md), then open the Research Lab.
-- **Want the exact procedures?** See [Experiment documentation](docs/EXPERIMENTS.md).
-- **Want the caveats first?** See the [Scientific and reproducibility audit](docs/SCIENTIFIC_AUDIT.md).
-- **Want to verify provenance?** See [reference_results/manifest.json](reference_results/manifest.json).
-- **Want to rerun it?** Use `START_HERE.bat` and open **Reproduce / data setup**.
+| Goal | Best path |
+|---|---|
+| Understand the study without installing anything | **[Open the static research report](https://t8pium.github.io/fvg-predictive-strength/)** |
+| Understand the terminology and interpretation | [Reading guide](docs/READING_GUIDE.md) |
+| See exact experiment definitions | [Experiment specification](docs/EXPERIMENTS.md) |
+| Read the scientific limitations | [Scientific audit](docs/SCIENTIFIC_AUDIT.md) |
+| Understand the app/demo/reproduction tools | [Research Platform Guide](docs/PLATFORM_GUIDE.md) |
+| Reproduce the study locally | Download ZIP → extract → double-click **START_HERE.bat** |
 
 ## Study at a glance
 
 | Question | Published result |
 |---|---|
-| Do 1m FVGs get revisited often? | Yes. About **90.86%** touched within 60 minutes and **99.88%** eventually touched in the available sample. |
-| Are they much more attractive than comparable ordinary zones? | Only slightly. Deep 1m matched advantage: about **+3.03 pp at 5m**, **+0.58 pp at 60m**, and approximately **0 pp by ~1 day**. |
-| Does the effect persist as an unfilled gap ages? | Not strongly. The incremental 1m advantage decayed quickly after the earliest bars. |
-| Is formation continuation stable? | No. Five-bar continuation differences were small and mixed across timeframes. |
-| Does the exact midpoint / CE matter? | Some timeframe cells were positive, including a larger 4H cell, but the evidence is not uniform. |
-| Does the result survive later data? | Often less well. Several later-sample effects weakened or turned negative. |
+| Do 1m FVGs get revisited often? | **90.86%** touched within 60 minutes; **99.88%** eventually touched in-sample. |
+| Are they much more attractive than matched ordinary zones? | Deep 1m excess: **+3.03 pp at 5m**, **+0.58 pp at 60m**, approximately **0 pp by ~1 day**. |
+| Does the effect survive as the gap gets older? | The incremental 1m advantage decayed rapidly after the first few bars. |
+| Does FVG formation predict directional continuation? | Five-bar continuation differences were small and mixed across timeframes. |
+| Is exact midpoint / CE behavior stable? | Results varied by timeframe; the larger 4H cell is exploratory rather than independently confirmed. |
+| Does the effect survive later data? | Several later-sample effects weakened or became negative. |
 
 ![Raw fill curve](reference_results/figures/01_fill_curve.svg)
 
 ![Matched FVG advantage](reference_results/figures/02_matched_advantage.svg)
 
-![Midpoint reaction](reference_results/figures/03_midpoint_reaction.svg)
-
 ![Chronological robustness](reference_results/figures/04_oos_robustness.svg)
 
-The figures are generated from reference_results/reference_metrics.json. Rebuild them with:
+## Research architecture
 
-~~~bash
-python scripts/render_reference_figures.py
+The nine reader-facing experiments share four heavy computational suites.
+
+~~~mermaid
+flowchart LR
+    A[Licensed Databento / OHLCV] --> B[Active MNQ 1m series]
+    B --> C[Mechanical FVG detection]
+    C --> D[Detailed 1m suite]
+    C --> E[Multi-timeframe suite]
+    C --> F[Midpoint / CE suite]
+    C --> G[CE body / execution suite]
+    D --> H[01 Raw Fill]
+    D --> I[02 Matched Attraction]
+    D --> J[08 Controls & Regimes]
+    D --> K[09 Chronological Robustness]
+    E --> I
+    E --> L[03 Age Decay]
+    E --> M[04 Continuation]
+    E --> N[05 First-Touch Reaction]
+    E --> K
+    F --> O[06 Midpoint / CE]
+    G --> P[07 Body Acceptance]
 ~~~
 
-## Three levels of verification
-
-### Level 1 — inspect
-
-No market data or installation required. GitHub contains:
-
-- frozen published metrics in reference_results/reference_metrics.json
-- a provenance manifest in reference_results/manifest.json
-- exact experiment definitions in docs/EXPERIMENTS.md
-- scientific limitations in docs/SCIENTIFIC_AUDIT.md
-- four preserved analysis scripts in src/original/
-- rendered published figures in reference_results/figures/
-
-### Level 2 — verify the software
-
-No licensed data required:
-
-~~~bash
-python -m pip install -e .
-python -m unittest discover -s tests -v
-python scripts/ci_policy_check.py
-~~~
-
-The tests cover detector mechanics, no-lookahead behavior, IO, DBN symbol mapping, active-contract construction, portability, dashboard routes and dataset-generation switching.
-
-### Level 3 — reproduce the market study
-
-Use your own licensed MNQ data and rerun the preserved calculations.
-
-## Fastest local path
-
-1. Download the repository ZIP.
-2. Extract it anywhere.
-3. On Windows, double-click **START_HERE.bat**.
-4. The launcher creates its own .fvg_venv, installs the pinned package and opens the local Research Lab.
-5. Browse all nine published experiments immediately.
-6. Open **Reproduce / data setup** only if you want to run the calculations yourself.
-
-Supported interpreter range: **64-bit Python 3.11–3.13**.
+The presentation layer does **not** reimplement the canonical calculations.
 
 ## Research Lab
 
-The dashboard is presentation-first rather than upload-first.
+The local app is evidence-first. All frozen published results can be explored with **no market data**.
 
-Each experiment opens directly to:
+Each experiment page contains a conceptual visual, headline metrics, charts, exact values, method, limitation, a provenance panel, reproduction controls and the hash-locked canonical source.
 
-- headline published metrics
-- one or more published charts
-- exact frozen values
-- method and known limitation
-- reproduction controls
-- the preserved canonical source
+### First launch vs later launches
 
-The nine presentation experiments are backed by four canonical computational suites:
+The first run of **START_HERE.bat** creates the private **.fvg_venv** and installs the pinned dependencies.
 
-| Canonical script | Experiment pages it feeds |
-|---|---|
-| fvg_final_fast.py | raw fill, deep matched attraction, controls/regimes, chronological robustness |
-| fvg_strength_one_tf.py | multi-timeframe attraction, age decay, continuation, first-touch reaction, robustness |
-| fvg_midpoint_reaction.py | midpoint / CE race |
-| fvg_ce_rejection_study.py | candle-body acceptance / rejection |
+Later launches are intentionally fast:
 
-A successful canonical run can therefore satisfy several visible experiment pages.
+1. fingerprint dependency definitions;
+2. perform one lightweight environment health probe;
+3. **skip all pip installation commands** if the environment is healthy;
+4. launch the Research Lab.
 
-## Data setup without browser-upload pain
+A regression test protects this fast path.
 
-Licensed Databento data is **not** committed or redistributed.
+## 60-second quick demo
 
-On Windows, the Research Lab now recommends:
+No licensed data required.
 
-> **Choose market-data file(s)…** → select the local ZIP/DBN/CSV/Parquet → build dataset.
+~~~bash
+python scripts/run_demo.py
+~~~
 
-That uses the real local path rather than routing a large file through the browser. Path entry and browser upload remain as fallbacks.
+Or open **Quick demo** in the Research Lab.
 
-Supported inputs:
+The demo exercises:
 
-- .dbn / .dbn.zst
-- .parquet / .pq
-- .csv / .csv.gz / .csv.zst
-- .zip containing supported data and optional Databento symbology sidecars
-- multiple files or a directory
+~~~text
+synthetic OHLCV
+  → causal market state
+  → FVG detection
+  → matched ordinary controls
+  → forward touch outcomes
+  → result table/chart
+~~~
+
+**The synthetic demo proves the software workflow, not a market effect.**
+
+## Full one-click reproduction
+
+Prepare licensed data, then click **Full reproduction → Start / resume full reproduction**.
+
+~~~bash
+python scripts/reproduce_full.py
+~~~
+
+The orchestrator runs 12 cached stages: detailed 1m; multi-timeframe at 1m, 5m, 15m, 1H and 4H; midpoint at the same five timeframes; and the full CE/body execution suite.
+
+Every stage is linked to the active dataset timestamp. If the process is interrupted, launching it again skips fresh successful stages and resumes the unfinished work.
+
+Use **--force** only when you intentionally want to recompute everything.
+
+## Data preparation
+
+The recommended Windows path is the native **Choose market-data file(s)…** button. It passes the real local file path and avoids copying large archives through the browser.
+
+Supported inputs include DBN, compressed DBN, Parquet, CSV variants, ZIP archives, multiple files and directories.
 
 The importer:
 
-1. resolves Databento symbol mappings
-2. keeps strict quarterly MNQ outrights
-3. assigns CME trade date at 18:00 America/New_York
-4. selects the highest-total-volume outright for each trade date
-5. removes exact overlaps and rejects conflicting duplicate bars
-6. validates OHLC geometry and missing values
-7. writes a **new versioned dataset generation**
-8. atomically switches current_dataset.json to that completed generation
+1. resolves Databento symbols;
+2. keeps strict quarterly MNQ outrights;
+3. assigns CME trade date at 18:00 America/New_York;
+4. selects the highest-total-volume contract by trade date;
+5. deduplicates exact overlap and rejects conflicting duplicates;
+6. validates OHLC;
+7. writes a new versioned dataset generation;
+8. atomically switches the tiny **current_dataset.json** pointer.
 
-The versioned design avoids overwriting a huge active_mnq.pkl while another Windows process may still have it open. A failed import leaves the previously active generation untouched.
+Large data files are therefore **not overwritten in place**, avoiding the Windows lock problem that existed in the earlier build.
 
-Published dataset snapshot:
+Published snapshot:
 
 ~~~text
 active rows:          2,303,483
@@ -154,89 +150,94 @@ start:                 2020-01-01 23:00:00+00:00
 end:                   2026-07-10 20:59:00+00:00
 ~~~
 
-Vendor history corrections can produce legitimate differences.
+## Static research report / downloadable artifact
 
-## Databento source used by the published study
+The public report is generated from repository evidence rather than maintained separately by hand:
 
-~~~text
-dataset:   GLBX.MDP3
-schema:    ohlcv-1m
-stype_in:  parent
-symbol:    MNQ.FUT
-start:     2020-01-01
-end:       2026-07-11  (exclusive; includes all of 2026-07-10)
+~~~bash
+python scripts/generate_static_report.py --output site/index.html
 ~~~
 
-The Research Lab can also download this range using your own API key. Historical requests may be billable.
+It includes the study summary, architecture, all nine experiments, frozen metrics, visual explainers, exact method sequence, provenance and scientific limitations.
+
+The **Report / export** page also lets a local user download the complete report as one self-contained HTML file.
+
+## Diagnostics
+
+The Research Lab **Diagnostics & uncertainty** page exposes matched effect size across horizon, raw fill-rate sample size, descriptive Wilson intervals, CE sample-size uncertainty and chronological early-vs-later shifts.
+
+Descriptive intervals are explicitly labeled and **do not pretend overlapping market events are independent**. Canonical clustered/bootstrap inference remains separate.
+
+## Machine-specific performance
+
+Instead of publishing timing numbers from one computer, the app benchmarks the machine it is actually running on.
+
+~~~bash
+python scripts/benchmark.py
+python scripts/benchmark.py --include-dataset
+~~~
+
+The benchmark can measure fresh dependency import, quick-demo runtime and Python peak allocation, report generation, optional active-dataset loading and real stage times from a completed full reproduction.
 
 ## Canonical-source integrity
 
-The published analysis files under src/original/ are preserved.
+Published analysis remains under **src/original/**.
 
-scripts/run_original.py:
+Before a canonical run, **scripts/run_original.py** checks the declared SHA-256 hash, resolves the active dataset generation, rewrites only known historical machine paths in a temporary AST copy, executes that temporary copy, and records the generated files and run manifest.
 
-1. verifies the declared SHA-256 hash
-2. resolves the currently active local dataset generation
-3. rewrites only the historical container-path constants in a temporary AST-generated copy
-4. executes that temporary copy
-5. records a local run manifest under results/_runs/
+Provenance and source hashes also live in [reference_results/manifest.json](reference_results/manifest.json).
 
-Canonical hashes and input provenance are also recorded in reference_results/manifest.json.
+## Research v2 — corrected / extended study
 
-## Command-line reproduction
+The published v1 code is preserved for reproducibility. Known scientific limitations are **not silently patched inside it**.
 
-~~~bash
-python scripts/prepare_active_contract.py --input YOUR_BATCH.zip
+Instead, [research_v2/](research_v2/) implements a separate new-research track with symmetric full-horizon eligibility, active-contract-boundary censoring, parent-paired age-decay controls, CME trade-date bootstrap clustering, test-period-local matched controls, walk-forward validation and Benjamini-Hochberg FDR correction.
 
-python scripts/run_original.py detailed-1m
-python scripts/run_original.py multi-tf --tf 1
-python scripts/run_original.py midpoint --tf 1
-python scripts/run_original.py ce-body --ce-tfs 60,120,240
-~~~
-
-Use repeated --input arguments for multiple files. A directory is also accepted.
-
-Run the complete canonical family with:
+Current runnable studies:
 
 ~~~bash
-python run_all.py
+python -m research_v2.runner attraction-1m --horizon 60
+python -m research_v2.runner walk-forward-1m --horizon 60
 ~~~
 
-## Repository structure
+Every v2 result is labeled **NEW / UNPUBLISHED RESEARCH** until it has been run on licensed history and reviewed.
+
+## Repository map
 
 ~~~text
-app/                          Streamlit presentation/reproduction layer
-fvg_research/                 reusable data/market helpers
-scripts/                      preparation, canonical runner, CI and figure scripts
+app/                          Streamlit Research Lab presentation layer
+fvg_research/                 reusable detector/data/demo/report/diagnostic code
+research_v2/                  corrected / extended unpublished research
+scripts/                      preparation, canonical runner, demo, full-run, benchmark, report
 src/original/                 hash-locked published analysis scripts
 reference_results/            frozen metrics, figures and provenance
-results/                      local generated outputs (ignored)
-data/                         local licensed dataset generations (ignored)
-docs/EXPERIMENTS.md           exact experiment definitions
-docs/SCIENTIFIC_AUDIT.md      preserved scientific limitations
-START_HERE.bat                Windows one-click launcher
-bootstrap.py                  isolated environment/bootstrap logic
+docs/                         reading guide, experiment spec, audit, platform guide
+results/                      ignored local outputs
+data/                         ignored licensed data generations
+START_HERE.bat                one-click Windows launcher
+bootstrap.py                  fast isolated environment/bootstrap logic
 dashboard.py                  thin Streamlit entry point
 ~~~
 
+## Verification
+
+~~~bash
+python -m pip check
+python -m compileall -q .
+python -m unittest discover -s tests -v
+python scripts/ci_policy_check.py
+python scripts/generate_static_report.py --output site/index.html
+~~~
+
+CI verifies supported Python versions on Linux and Windows, package portability, every dashboard route, detector/no-lookahead mechanics, IO/DBN handling, dataset switching, the quick demo, Research v2 correction mechanics, static-report generation, canonical hashes and licensed-data exclusion.
+
 ## Important scientific limits
 
-The project deliberately does not rewrite the published methodology just to make results look cleaner. The audit documents retained limitations including:
+The current published v1 study retains documented issues including long-horizon right-censor asymmetry in one detailed 1m comparison, chronological robustness that is not a sealed prospective holdout, survivor-zone weighting in the published age-decay control calculation, calendar-date rather than CME-trade-date clustering in some v1 bootstraps, some non-CE outcomes that can span an active-contract roll, and overlapping observations/multiple-testing risk in exploratory CE analysis.
 
-- long-horizon right-censor asymmetry in the detailed 1m study
-- chronological robustness that is not a sealed prospective holdout
-- survivor-zone weighting in one age-decay control calculation
-- ET calendar-day bootstrap clustering in several scripts
-- some non-CE outcomes that can cross an active-contract roll
-- overlapping observations and multiple-testing risk in the exploratory CE analysis
+Read the [Scientific Audit](docs/SCIENTIFIC_AUDIT.md) before treating any positive result as an independent trading edge.
 
-Read [docs/SCIENTIFIC_AUDIT.md](docs/SCIENTIFIC_AUDIT.md) before treating any individual cell as an independent trading edge.
+---
 
-## Bottom line
-
-The repository is intended to show both sides of reproducible quantitative research:
-
-- **the completed evidence is visible immediately**
-- **the exact calculations can be rerun independently without silently changing the published code**
-
-Published report: https://t8pium.github.io/projects/fvg-predictive-strength/
+**Published report:** https://t8pium.github.io/projects/fvg-predictive-strength/  
+**Generated static report:** https://t8pium.github.io/fvg-predictive-strength/

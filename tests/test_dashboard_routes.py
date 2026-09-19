@@ -17,7 +17,16 @@ class TestDashboardRoutes(unittest.TestCase):
         app = self.app().run()
         self.assert_clean(app)
         self.assertTrue(any("FVG Predictive Strength" in block.value for block in app.markdown))
-        for page in ("Data Setup", "Generated Outputs"):
+        for page in (
+            "Quick Demo",
+            "Data Setup",
+            "Full Reproduction",
+            "Diagnostics",
+            "Performance",
+            "Research v2",
+            "Report",
+            "Generated Outputs",
+        ):
             app.session_state["page"] = page
             app.run()
             self.assert_clean(app)

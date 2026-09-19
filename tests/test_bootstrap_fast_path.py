@@ -15,8 +15,10 @@ class TestBootstrapFastPath(unittest.TestCase):
             calls = []
             with patch.object(bootstrap, "venv_python", return_value=fake_python), \
                  patch.object(bootstrap, "installed_environment_is_healthy", return_value=True), \
+                 patch.object(bootstrap, "venv_interpreter_supported") as interpreter_probe, \
                  patch.object(bootstrap, "run", side_effect=lambda cmd, **kwargs: calls.append(cmd)):
                 bootstrap.main()
+                interpreter_probe.assert_not_called()
 
         self.assertEqual(len(calls), 1)
         command = [str(value) for value in calls[0]]

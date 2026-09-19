@@ -10,9 +10,18 @@ import streamlit as st
 
 from fvg_research.dashboard_helpers import parse_local_paths
 from fvg_research.dataset import dataset_ready
+from fvg_research.diagnostics import (
+    ce_band_intervals,
+    chronological_shift,
+    matched_effect_profile,
+    raw_fill_intervals,
+)
+from fvg_research.explainers import experiment_svg, research_flow_svg
+from fvg_research.report import build_report
 
 from .catalog import CE_TIMEFRAMES, EXPERIMENTS, EXPERIMENT_TAGS, ORDER, TF_LABELS
 from .charts import headline_metrics, published_charts
+from .provenance import EXPERIMENT_PROVENANCE
 from .runtime import (
     LARGE_UPLOAD_WARNING,
     ROOT,
@@ -43,6 +52,7 @@ REFERENCE = json.loads((ROOT / "reference_results" / "reference_metrics.json").r
 PROVENANCE = json.loads((ROOT / "reference_results" / "manifest.json").read_text(encoding="utf-8"))
 GITHUB = "https://github.com/t8pium/fvg-predictive-strength"
 REPORT = "https://t8pium.github.io/projects/fvg-predictive-strength/"
+STATIC_REPORT = "https://t8pium.github.io/fvg-predictive-strength/"
 CHART_CONFIG = {
     "displaylogo": False,
     "modeBarButtonsToRemove": ["lasso2d", "select2d"],
@@ -446,6 +456,415 @@ def glossary() -> None:
                 info_card(term, definition)
 
 
+
+def quick_demo_page() -> None:
+    hero(
+        "60-second software proof",
+        "Quick demo",
+        "Run the complete detector → market-state → matched-control → forward-outcome pipeline on deterministic synthetic OHLCV. No Databento account or licensed market history is required.",
+        ["Synthetic data", "No market claim", "Fast", "End-to-end"],
+    )
+    callout(
+        "What this proves",
+        "The demo proves that the software pipeline runs coherently on a fresh machine. Its numerical result is deliberately not presented as evidence about MNQ or FVG profitability.",
+        kind="warning",
+    )
+
+    cols = st.columns(4)
+    with cols[0]:
+        info_card("1 · Generate", "Create deterministic MNQ-like synthetic OHLCV with injected FVG formations.")
+    with cols[1]:
+        info_card("2 · Detect", "Run the same reusable completed-candle FVG detector.")
+    with cols[2]:
+        info_card("3 · Match", "Build ordinary matched control zones from causal market-state features.")
+    with cols[3]:
+        info_card("4 · Measure", "Compare future touch outcomes over several horizons.")
+
+    if st.button("Run quick demo", type="primary", width="stretch"):
+        live = st.empty()
+        rc, log = run_process(
+            [str(ROOT / "scripts" / "run_demo.py")],
+            live_placeholder=live,
+        )
+        st.session_state["quick_demo_log"] = log
+        st.session_state["quick_demo_rc"] = rc
+
+    if st.session_state.get("quick_demo_log"):
+        with st.expander("Demo log", expanded=st.session_state.get("quick_demo_rc") != 0):
+            st.code(st.session_state["quick_demo_log"], language="text")
+
+    summary_path = ROOT / "results" / "demo" / "demo_summary.json"
+    csv_path = ROOT / "results" / "demo" / "demo_horizons.csv"
+    if summary_path.is_file() and csv_path.is_file():
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        section_header("Latest run", "Synthetic demo result")
+        cols = st.columns(4)
+        cols[0].metric("Synthetic bars", f"{int(summary['bars']):,}")
+        cols[1].metric("Detected FVGs", f"{int(summary['detected_fvgs']):,}")
+        cols[2].metric("Matched controls", f"{int(summary['matched_control_rows']):,}")
+        cols[3].metric("Elapsed", f"{float(summary['elapsed_seconds']):.2f}s")
+        frame = pd.read_csv(csv_path)
+        st.dataframe(frame, width="stretch", hide_index=True)
+        fig = px.line(
+            frame,
+            x="horizon_bars",
+            y=["fvg_rate", "control_rate"],
+            markers=True,
+            labels={"value": "Touch rate", "horizon_bars": "Forward horizon (bars)", "variable": "Series"},
+            title="Synthetic FVG vs matched-control touch rate",
+        )
+        st.plotly_chart(fig, width="stretch", config=CHART_CONFIG)
+
+
+def full_reproduction_page() -> None:
+    hero(
+        "One-click canonical workflow",
+        "Reproduce the full published study",
+        "Run all four preserved computational suites across every published timeframe. Completed stages are cached against the active dataset, so an interrupted run can be resumed without repeating finished work.",
+        ["12 cached stages", "Resume-safe", "Canonical v1", "Published comparison"],
+    )
+
+    stage_rows = [
+        ("01", "Detailed 1m", "Raw fill · deep matched attraction · controls/regimes · deep chronology"),
+        ("02–06", "Multi-timeframe", "1m · 5m · 15m · 1H · 4H"),
+        ("07–11", "Midpoint / CE", "1m · 5m · 15m · 1H · 4H"),
+        ("12", "CE body / execution", "1m through 1D signal timeframes"),
+    ]
+    st.dataframe(
+        pd.DataFrame(stage_rows, columns=["Stage", "Canonical suite", "Feeds"]),
+        width="stretch",
+        hide_index=True,
+    )
+
+    section_header("Input", "Active dataset")
+    dataset_summary()
+    if not dataset_ready():
+        file_setup("full_reproduction")
+        return
+
+    callout(
+        "Resume behavior",
+        "The orchestrator checks fresh success manifests before every stage. Re-running after a crash or manual stop skips stages that already completed on the current dataset.",
+        kind="success",
+    )
+
+    force = st.checkbox("Force rerun every stage even when a fresh cached result exists.")
+    button_label = "Rerun everything" if force else "Start / resume full reproduction"
+    if st.button(button_label, type="primary", width="stretch"):
+        args = [str(ROOT / "scripts" / "reproduce_full.py")]
+        if force:
+            args.append("--force")
+        live = st.empty()
+        rc, log = run_process(args, live_placeholder=live)
+        st.session_state["full_reproduction_log"] = log
+        st.session_state["full_reproduction_rc"] = rc
+
+    if st.session_state.get("full_reproduction_log"):
+        with st.expander(
+            "Full reproduction log",
+            expanded=st.session_state.get("full_reproduction_rc") != 0,
+        ):
+            st.code(st.session_state["full_reproduction_log"], language="text")
+
+    state_path = ROOT / "results" / "_full_reproduction" / "state.json"
+    verify_path = ROOT / "results" / "_full_reproduction" / "verification.json"
+    if state_path.is_file():
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        section_header("Progress", "Latest full-run state")
+        st.caption(f"Status: {state.get('status', 'unknown')}")
+        stages = pd.DataFrame(state.get("stages", []))
+        if len(stages):
+            visible = [column for column in ["key", "label", "status", "seconds", "exit_code"] if column in stages.columns]
+            st.dataframe(stages[visible], width="stretch", hide_index=True)
+    if verify_path.is_file():
+        checks = pd.DataFrame(json.loads(verify_path.read_text(encoding="utf-8")))
+        if len(checks):
+            section_header("Verification", "Published vs reproduced values")
+            st.dataframe(checks, width="stretch", hide_index=True)
+
+
+def diagnostics_page() -> None:
+    hero(
+        "Statistical context",
+        "Diagnostics & uncertainty",
+        "Inspect effect-size profiles, descriptive uncertainty, sample size and chronological stability without turning every positive cell into a trading conclusion.",
+        ["Effect size", "Sample size", "Uncertainty", "Robustness"],
+    )
+
+    section_header(
+        "Matched attraction",
+        "Effect size across horizon",
+        "The central question is not whether FVGs are revisited often, but how much more often they are reached than comparable ordinary zones.",
+    )
+    matched = matched_effect_profile(REFERENCE)
+    st.dataframe(matched, width="stretch", hide_index=True)
+    st.plotly_chart(
+        px.line(
+            matched,
+            x="Horizon",
+            y="Difference (pp)",
+            markers=True,
+            title="Incremental matched attraction by horizon",
+        ),
+        width="stretch",
+        config=CHART_CONFIG,
+    )
+
+    section_header(
+        "Raw fill-rate uncertainty",
+        "Large N makes the descriptive sampling interval very narrow",
+        "These Wilson intervals treat events as independent Bernoulli observations. Because market events overlap and cluster, they are descriptive only and do not replace the canonical clustered/bootstrap inference.",
+    )
+    raw_ci = raw_fill_intervals(REFERENCE)
+    raw_ci["plus"] = raw_ci["Wilson high (%)"] - raw_ci["Rate (%)"]
+    raw_ci["minus"] = raw_ci["Rate (%)"] - raw_ci["Wilson low (%)"]
+    fig = px.line(
+        raw_ci,
+        x="Horizon",
+        y="Rate (%)",
+        markers=True,
+        error_y="plus",
+        error_y_minus="minus",
+        title="Raw touch rate with descriptive Wilson interval",
+    )
+    st.plotly_chart(fig, width="stretch", config=CHART_CONFIG)
+    st.dataframe(raw_ci.drop(columns=["plus", "minus"]), width="stretch", hide_index=True)
+
+    section_header(
+        "Exploratory CE cell",
+        "Sample-size uncertainty around 4H close-depth bands",
+        "The intervals below describe win-rate uncertainty only. They do not fix overlap, dependence or the multiple-testing problem documented in the scientific audit.",
+    )
+    ce = ce_band_intervals(REFERENCE)
+    ce["plus"] = ce["Wilson high (%)"] - ce["Win rate (%)"]
+    ce["minus"] = ce["Win rate (%)"] - ce["Wilson low (%)"]
+    fig = px.bar(
+        ce,
+        x="Band",
+        y="Win rate (%)",
+        error_y="plus",
+        error_y_minus="minus",
+        title="4H CE close-depth bands with descriptive Wilson intervals",
+    )
+    st.plotly_chart(fig, width="stretch", config=CHART_CONFIG)
+    st.dataframe(ce.drop(columns=["plus", "minus"]), width="stretch", hide_index=True)
+
+    section_header(
+        "Chronological stability",
+        "How the effect changed in later data",
+        "A stable market relationship should not depend entirely on the earlier portion of the sample.",
+    )
+    shift = chronological_shift(REFERENCE)
+    st.dataframe(shift, width="stretch", hide_index=True)
+    long = shift.melt(
+        id_vars=["Timeframe"],
+        value_vars=["Early (pp)", "Later (pp)"],
+        var_name="Split",
+        value_name="Difference (pp)",
+    )
+    st.plotly_chart(
+        px.bar(
+            long,
+            x="Timeframe",
+            y="Difference (pp)",
+            color="Split",
+            barmode="group",
+            title="Early versus later matched effect",
+        ),
+        width="stretch",
+        config=CHART_CONFIG,
+    )
+
+
+def performance_page() -> None:
+    hero(
+        "Machine-specific timing",
+        "Performance & startup",
+        "Measure what actually takes time on this computer instead of publishing invented benchmark numbers from a different machine.",
+        ["Startup", "Quick demo", "Report generation", "Optional dataset load"],
+    )
+
+    callout(
+        "Repeat startup is already optimized",
+        "After the first successful install, START_HERE fingerprints the dependency files and runs a lightweight health probe. It does not run pip install again unless the environment or dependency definition changed.",
+        kind="success",
+    )
+
+    include_dataset = st.checkbox(
+        "Include a full active-dataset pickle load in the benchmark",
+        disabled=not dataset_ready(),
+        help="This can use significant memory. Leave it off for a quick benchmark.",
+    )
+    if st.button("Run benchmark on this machine", type="primary", width="stretch"):
+        args = [str(ROOT / "scripts" / "benchmark.py")]
+        if include_dataset:
+            args.append("--include-dataset")
+        live = st.empty()
+        rc, log = run_process(args, live_placeholder=live)
+        st.session_state["benchmark_log"] = log
+        st.session_state["benchmark_rc"] = rc
+
+    if st.session_state.get("benchmark_log"):
+        with st.expander("Benchmark log", expanded=st.session_state.get("benchmark_rc") != 0):
+            st.code(st.session_state["benchmark_log"], language="text")
+
+    path = ROOT / "results" / "_benchmarks" / "latest.json"
+    if path.is_file():
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        section_header("Latest benchmark", "Measured on this machine")
+        st.caption(f"{payload.get('platform', '')} · Python {payload.get('python', '')}")
+        rows = [
+            {"Measurement": key.replace("_", " "), "Value": value}
+            for key, value in payload.get("measurements", {}).items()
+        ]
+        st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
+
+    full_state = ROOT / "results" / "_full_reproduction" / "state.json"
+    if full_state.is_file():
+        payload = json.loads(full_state.read_text(encoding="utf-8"))
+        stages = pd.DataFrame(payload.get("stages", []))
+        timed = stages.loc[stages.get("seconds", pd.Series(dtype=float)).fillna(0) > 0] if len(stages) else pd.DataFrame()
+        if len(timed):
+            section_header("Heavy calculations", "Measured full-reproduction stage times")
+            st.dataframe(timed[["label", "status", "seconds"]], width="stretch", hide_index=True)
+
+
+def research_v2_page() -> None:
+    hero(
+        "Corrected / extended study",
+        "Research v2",
+        "A separate new-research track that addresses known limitations in the published scripts without rewriting the historical v1 evidence.",
+        ["NEW / UNPUBLISHED", "Corrected censoring", "Walk-forward", "Multiplicity control"],
+    )
+    callout(
+        "Not part of the published v1 result",
+        "Any value generated here is new research. It is intentionally kept separate from the frozen published reference until it has been run on licensed data and reviewed.",
+        kind="warning",
+    )
+
+    corrections = [
+        ("Full-horizon symmetry", "Real FVGs and controls both require the complete requested future window."),
+        ("Contract-boundary censoring", "Future outcomes cannot cross an active-contract segment."),
+        ("Parent-paired decay", "Control survivors are averaged within each parent before comparison."),
+        ("CME trade-date clustering", "Bootstrap clusters use the same 18:00 ET trade-date convention as the dataset."),
+        ("Chronological isolation", "Walk-forward controls are constructed inside the corresponding test period only."),
+        ("Multiplicity control", "Walk-forward p-values receive Benjamini-Hochberg FDR-adjusted q-values."),
+    ]
+    for start in range(0, len(corrections), 3):
+        cols = st.columns(3)
+        for column, (title, body) in zip(cols, corrections[start:start + 3]):
+            with column:
+                info_card(title, body)
+
+    if not dataset_ready():
+        section_header("Input", "Prepare a dataset before running v2")
+        dataset_summary()
+        return
+
+    section_header("Run", "Choose a corrected v2 analysis")
+    study = st.radio(
+        "Study",
+        ["attraction-1m", "walk-forward-1m"],
+        format_func=lambda value: "Corrected 1m matched attraction" if value == "attraction-1m" else "Walk-forward corrected 1m attraction",
+    )
+    cols = st.columns(3)
+    horizon = cols[0].number_input("Horizon (1m bars)", min_value=1, value=60, step=1)
+    max_events = cols[1].number_input("Max FVG parents", min_value=100, value=10_000, step=500)
+    boot = cols[2].number_input("Bootstrap replications", min_value=100, value=500, step=100)
+
+    if st.button("Run Research v2", type="primary", width="stretch"):
+        args = [
+            "-m", "research_v2.runner", study,
+            "--horizon", str(int(horizon)),
+            "--max-events", str(int(max_events)),
+            "--bootstrap", str(int(boot)),
+        ]
+        live = st.empty()
+        rc, log = run_process(args, live_placeholder=live)
+        st.session_state["v2_log"] = log
+        st.session_state["v2_rc"] = rc
+
+    if st.session_state.get("v2_log"):
+        with st.expander("Research v2 log", expanded=st.session_state.get("v2_rc") != 0):
+            st.code(st.session_state["v2_log"], language="text")
+
+    out = ROOT / "results" / "research_v2"
+    file = out / ("corrected_attraction_1m.json" if study == "attraction-1m" else "walk_forward_1m.json")
+    if file.is_file():
+        section_header("Latest result", "New / unpublished output")
+        payload = json.loads(file.read_text(encoding="utf-8"))
+        if study == "attraction-1m":
+            result = payload.get("result", {})
+            cols = st.columns(4)
+            cols[0].metric("Parents", f"{int(result.get('parents', 0)):,}")
+            cols[1].metric("Difference", f"{float(result.get('difference_pp', float('nan'))):+.3f} pp")
+            cols[2].metric("95% cluster CI", f"{float(result.get('ci_low_pp', float('nan'))):+.2f} to {float(result.get('ci_high_pp', float('nan'))):+.2f} pp")
+            cols[3].metric("Two-sided p", f"{float(result.get('p_two_sided', float('nan'))):.3f}")
+            st.json(payload)
+        else:
+            frame = pd.DataFrame(payload.get("windows", []))
+            st.dataframe(frame, width="stretch", hide_index=True)
+            if len(frame):
+                st.plotly_chart(
+                    px.line(
+                        frame,
+                        x="window",
+                        y="difference_pp",
+                        markers=True,
+                        title="Corrected walk-forward matched attraction",
+                    ),
+                    width="stretch",
+                    config=CHART_CONFIG,
+                )
+
+
+def report_page() -> None:
+    hero(
+        "Portable research artifact",
+        "Report & export",
+        "Download a self-contained HTML research report containing the study summary, conceptual diagrams, all nine experiment descriptions, frozen metrics, methodology, provenance and limitations.",
+        ["Single HTML file", "Offline readable", "No market data", "Generated from repository evidence"],
+    )
+
+    report_html = build_report(
+        REFERENCE,
+        EXPERIMENTS,
+        EXPERIMENT_PROVENANCE,
+        ROOT,
+    )
+    cols = st.columns(2)
+    with cols[0]:
+        st.download_button(
+            "Download self-contained HTML report",
+            data=report_html,
+            file_name="fvg_predictive_strength_research_report.html",
+            mime="text/html",
+            type="primary",
+            width="stretch",
+        )
+    with cols[1]:
+        st.link_button(
+            "Open public static report",
+            STATIC_REPORT,
+            width="stretch",
+        )
+
+    section_header(
+        "What is included",
+        "One artifact, full audit trail",
+        "The report is generated from the same frozen evidence and metadata used by the Research Lab rather than maintained as a separate hand-edited document.",
+    )
+    cols = st.columns(4)
+    with cols[0]:
+        info_card("Study summary", "Dataset scope, research question and central published conclusion.")
+    with cols[1]:
+        info_card("Nine experiments", "Conceptual diagram, headline values, method and limitation for every experiment.")
+    with cols[2]:
+        info_card("Provenance", "Canonical suite, input scope, sample design, control design, seeds and outputs.")
+    with cols[3]:
+        info_card("No licensed data", "The report contains evidence and methodology only, never redistributed vendor history.")
+
+
 def home_page() -> None:
     hero(
         "Quantitative market-structure research",
@@ -496,6 +915,13 @@ def home_page() -> None:
     for column, (title, body) in zip(cols, design):
         with column:
             info_card(title, body)
+
+    section_header(
+        "Architecture",
+        "How four computational suites become nine experiments",
+        "The heavy calculations are shared rather than duplicated. This is why one successful canonical run can populate several experiment pages.",
+    )
+    st.markdown(research_flow_svg(), unsafe_allow_html=True)
 
     section_header(
         "Visual summary",
@@ -552,6 +978,16 @@ def home_page() -> None:
     with cols[2]:
         info_card("Independent rerun", "Bring licensed data, build the active series and compare your output against the frozen reference.")
 
+    cta_left, cta_right = st.columns(2)
+    with cta_left:
+        if st.button("Run the no-data quick demo →", type="primary", width="stretch"):
+            st.session_state["page"] = "Quick Demo"
+            st.rerun()
+    with cta_right:
+        if st.button("Open full reproduction →", width="stretch"):
+            st.session_state["page"] = "Full Reproduction"
+            st.rerun()
+
     st.markdown("---")
     st.markdown(
         f"[GitHub repository]({GITHUB}) · "
@@ -587,6 +1023,29 @@ def experiment_page(exp_id: str) -> None:
             column.metric(label, value, delta)
 
     callout("What this experiment adds", exp["takeaway"])
+
+    section_header(
+        "Visual model",
+        "What this experiment is actually testing",
+        "The diagram is conceptual. The exact numerical rules remain the canonical code and method specification.",
+    )
+    st.markdown(experiment_svg(exp_id), unsafe_allow_html=True)
+
+    prov = EXPERIMENT_PROVENANCE[exp_id]
+    with st.expander("Experiment provenance · sample · controls · seed · outputs"):
+        rows = [
+            ("Canonical suite", prov["suite"]),
+            ("Input", prov["input"]),
+            ("Published population", prov["population"]),
+            ("Controls", prov["controls"]),
+            ("Seed", prov["seed"]),
+            ("Primary outputs", ", ".join(prov["outputs"])),
+        ]
+        st.dataframe(
+            pd.DataFrame(rows, columns=["Field", "Published design"]),
+            width="stretch",
+            hide_index=True,
+        )
 
     results, method, reproduce, source = st.tabs(
         ["Results", "Method & limitations", "Reproduce", "Canonical source"]
@@ -636,8 +1095,30 @@ def sidebar() -> None:
     if st.button("Research overview", width="stretch"):
         st.session_state["page"] = "Home"
         st.rerun()
+
+    st.markdown("**Run & verify**")
+    if st.button("Quick demo", width="stretch"):
+        st.session_state["page"] = "Quick Demo"
+        st.rerun()
     if st.button("Reproduce / data setup", width="stretch"):
         st.session_state["page"] = "Data Setup"
+        st.rerun()
+    if st.button("Full reproduction", width="stretch"):
+        st.session_state["page"] = "Full Reproduction"
+        st.rerun()
+
+    st.markdown("**Inspect & export**")
+    if st.button("Diagnostics", width="stretch"):
+        st.session_state["page"] = "Diagnostics"
+        st.rerun()
+    if st.button("Report / export", width="stretch"):
+        st.session_state["page"] = "Report"
+        st.rerun()
+    if st.button("Performance", width="stretch"):
+        st.session_state["page"] = "Performance"
+        st.rerun()
+    if st.button("Research v2", width="stretch"):
+        st.session_state["page"] = "Research v2"
         st.rerun()
     if st.button("Local outputs", width="stretch"):
         st.session_state["page"] = "Generated Outputs"
@@ -685,8 +1166,20 @@ def main() -> None:
         sidebar()
 
     page = st.session_state["page"]
-    if page == "Data Setup":
+    if page == "Quick Demo":
+        quick_demo_page()
+    elif page == "Data Setup":
         data_page()
+    elif page == "Full Reproduction":
+        full_reproduction_page()
+    elif page == "Diagnostics":
+        diagnostics_page()
+    elif page == "Performance":
+        performance_page()
+    elif page == "Research v2":
+        research_v2_page()
+    elif page == "Report":
+        report_page()
     elif page == "Generated Outputs":
         hero(
             "Local reproduction",

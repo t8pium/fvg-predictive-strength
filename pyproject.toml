@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "t8pium-fvg-research"
-version = "2.0.0"
+version = "3.0.0"
 description = "Inspectable and reproducible MNQ Fair Value Gap predictive-strength research lab"
 requires-python = ">=3.11,<3.14"
 dependencies = [
@@ -24,4 +24,4 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["fvg_research", "app"]
+packages = ["fvg_research", "app", "research_v2"]
