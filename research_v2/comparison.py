@@ -49,8 +49,12 @@ def build_v1_v2_comparison(reference: dict, output_dir: str | Path) -> pd.DataFr
     if ce:
         for row in ce.get("cells", []):
             if str(row.get("timeframe")) == "4H" and str(row.get("depth_band")) == "45-50%":
-                v1_selected = reference["experiments"]["body_acceptance"]["selected"]
-                v1_mean_r = float(v1_selected["mean_R"])
+                v1_band = next(
+                    item
+                    for item in reference["experiments"]["body_acceptance"]["four_hour_bands"]
+                    if str(item["band"]) == "45–50%"
+                )
+                v1_mean_r = float(v1_band["mean_R"])
                 rows.append({
                     "Question": "4H CE body close 45–50%",
                     "Published v1": v1_mean_r,
