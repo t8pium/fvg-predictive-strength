@@ -1,5 +1,6 @@
 import json
 import unittest
+from html import escape
 from pathlib import Path
 
 from app.catalog import EXPERIMENTS
@@ -29,7 +30,7 @@ class TestResearchReport(unittest.TestCase):
         self.assertIn("FVG Predictive Strength", html)
         for exp_id, meta in EXPERIMENTS.items():
             self.assertIn(f'id="exp-{exp_id}"', html)
-            self.assertIn(meta["title"], html)
+            self.assertIn(escape(meta["title"]), html)
         self.assertIn("Canonical suite", html)
         self.assertNotIn("DATABENTO_API_KEY", html)
 
