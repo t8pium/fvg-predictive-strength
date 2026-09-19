@@ -62,3 +62,5 @@ The v4 audit layer adds:
 - versioned release bundling and GitHub Release automation.
 
 Published v1 canonical scripts remain unchanged.
+
+Cross-platform v4 validation covers the event explorer, placebo/ablation suites, power/MDE, hypothesis registry, golden fixture, run capsules, preflight, stability atlas, economic significance, v1-v2 comparison, release builder and every dashboard route.
