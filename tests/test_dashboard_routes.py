@@ -26,10 +26,20 @@ class TestDashboardRoutes(unittest.TestCase):
             "Research v2",
             "Report",
             "Generated Outputs",
+            "Event Explorer",
+            "Stability Atlas",
+            "Power",
+            "Economics",
+            "Stress Tests",
+            "Hypothesis Registry",
+            "Data Preflight",
+            "V1 V2",
+            "Releases",
         ):
-            app.session_state["page"] = page
-            app.run()
-            self.assert_clean(app)
+            with self.subTest(page=page):
+                app.session_state["page"] = page
+                app.run()
+                self.assert_clean(app)
 
     def test_all_nine_experiment_routes_without_market_data(self):
         experiment_ids = [
