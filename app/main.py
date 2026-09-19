@@ -764,8 +764,12 @@ def research_v2_page() -> None:
     section_header("Run", "Choose a corrected v2 analysis")
     study = st.radio(
         "Study",
-        ["attraction-1m", "walk-forward-1m"],
-        format_func=lambda value: "Corrected 1m matched attraction" if value == "attraction-1m" else "Walk-forward corrected 1m attraction",
+        ["attraction-1m", "age-decay-1m", "walk-forward-1m"],
+        format_func=lambda value: {
+            "attraction-1m": "Corrected 1m matched attraction",
+            "age-decay-1m": "Corrected parent-paired 1m age decay",
+            "walk-forward-1m": "Walk-forward corrected 1m attraction",
+        }[value],
     )
     cols = st.columns(3)
     horizon = cols[0].number_input("Horizon (1m bars)", min_value=1, value=60, step=1)
@@ -789,7 +793,12 @@ def research_v2_page() -> None:
             st.code(st.session_state["v2_log"], language="text")
 
     out = ROOT / "results" / "research_v2"
-    file = out / ("corrected_attraction_1m.json" if study == "attraction-1m" else "walk_forward_1m.json")
+    file_map = {
+        "attraction-1m": out / "corrected_attraction_1m.json",
+        "age-decay-1m": out / "corrected_age_decay_1m.json",
+        "walk-forward-1m": out / "walk_forward_1m.json",
+    }
+    file = file_map[study]
     if file.is_file():
         section_header("Latest result", "New / unpublished output")
         payload = json.loads(file.read_text(encoding="utf-8"))
@@ -805,13 +814,19 @@ def research_v2_page() -> None:
             frame = pd.DataFrame(payload.get("windows", []))
             st.dataframe(frame, width="stretch", hide_index=True)
             if len(frame):
+                title = (
+                    "Corrected parent-paired age decay"
+                    if study == "age-decay-1m"
+                    else "Corrected walk-forward matched attraction"
+                )
+                x_axis = "window"
                 st.plotly_chart(
                     px.line(
                         frame,
-                        x="window",
+                        x=x_axis,
                         y="difference_pp",
                         markers=True,
-                        title="Corrected walk-forward matched attraction",
+                        title=title,
                     ),
                     width="stretch",
                     config=CHART_CONFIG,
