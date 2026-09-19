@@ -1,0 +1,88 @@
+from __future__ import annotations
+
+import math
+
+import pandas as pd
+
+
+def wilson_interval(success_rate: float, n: int, z: float = 1.959963984540054) -> tuple[float, float]:
+    """Wilson score interval for a binomial proportion."""
+    if n <= 0:
+        return (math.nan, math.nan)
+    p = min(1.0, max(0.0, float(success_rate)))
+    denom = 1 + z * z / n
+    center = (p + z * z / (2 * n)) / denom
+    half = z * math.sqrt((p * (1 - p) + z * z / (4 * n)) / n) / denom
+    return max(0.0, center - half), min(1.0, center + half)
+
+
+def raw_fill_intervals(reference: dict) -> pd.DataFrame:
+    n = int(reference["study"]["fvg_1m_count"])
+    exp = reference["experiments"]["raw_fill"]
+    labels = ["5m", "15m", "30m", "60m", "120m", "240m", "~1d", "~3d"]
+    rows = []
+    for label, rate in zip(labels, exp["touch_rate"]):
+        low, high = wilson_interval(rate, n)
+        rows.append(
+            {
+                "Horizon": label,
+                "N": n,
+                "Rate (%)": rate * 100,
+                "Wilson low (%)": low * 100,
+                "Wilson high (%)": high * 100,
+                "Interval type": "Binomial descriptive; ignores event dependence",
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def ce_band_intervals(reference: dict) -> pd.DataFrame:
+    rows = []
+    for row in reference["experiments"]["body_acceptance"]["four_hour_bands"]:
+        rate = row["win_rate"] / 100
+        low, high = wilson_interval(rate, int(row["N"]))
+        rows.append(
+            {
+                "Band": row["band"],
+                "N": int(row["N"]),
+                "Win rate (%)": row["win_rate"],
+                "Wilson low (%)": low * 100,
+                "Wilson high (%)": high * 100,
+                "Mean gross R": row["mean_R"],
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def matched_effect_profile(reference: dict) -> pd.DataFrame:
+    return pd.DataFrame(reference["experiments"]["matched_attraction"]["deep_1m"]).rename(
+        columns={
+            "horizon": "Horizon",
+            "fvg": "FVG rate",
+            "control": "Control rate",
+            "difference_pp": "Difference (pp)",
+        }
+    )
+
+
+def chronological_shift(reference: dict) -> pd.DataFrame:
+    rows = []
+    for row in reference["experiments"]["oos"]["five_bar"]:
+        rows.append(
+            {
+                "Timeframe": row["timeframe"],
+                "Early (pp)": row["train_pp"],
+                "Later (pp)": row["test_pp"],
+                "Change (pp)": row["test_pp"] - row["train_pp"],
+            }
+        )
+    deep = reference["experiments"]["oos"]["deep_1m_60m"]
+    rows.append(
+        {
+            "Timeframe": "Deep 1m / 60m",
+            "Early (pp)": deep["train_pp"],
+            "Later (pp)": deep["test_pp"],
+            "Change (pp)": deep["test_pp"] - deep["train_pp"],
+        }
+    )
+    return pd.DataFrame(rows)
