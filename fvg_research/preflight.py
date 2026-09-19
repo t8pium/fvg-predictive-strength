@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import json
+import re
 import zipfile
 from pathlib import Path
 
 import pandas as pd
 
 from .io import DATA_SUFFIXES, supported_file
+
+MNQ_OUTRIGHT_RE = re.compile(r"\bMNQ[HMUZ](?:\d{1,2}|\d{4})\b", re.IGNORECASE)
+ISO_DATE_RE = re.compile(r"\b20\d{2}-\d{2}-\d{2}\b")
 
 SUPPORTED_LABELS = {
     ".zip": "ZIP archive",
@@ -28,6 +33,8 @@ def _kind(path: Path) -> str:
 
 
 def _zip_inventory(path: Path) -> dict[str, object]:
+    detected_symbols: set[str] = set()
+    detected_dates: set[str] = set()
     with zipfile.ZipFile(path, "r") as archive:
         members = [member for member in archive.infolist() if not member.is_dir()]
         data_members = [
@@ -37,7 +44,20 @@ def _zip_inventory(path: Path) -> dict[str, object]:
         sidecars = [member for member in members if member.filename.lower().endswith(".json")]
         expanded = sum(member.file_size for member in members)
         compressed = sum(member.compress_size for member in members)
-    return {
+
+        # Sidecars are small and often contain resolved symbol mappings/date metadata.
+        # Reading them is much cheaper than decoding the multi-GB market-data payload.
+        for sidecar in sidecars[:50]:
+            if sidecar.file_size > 20 * 1024**2:
+                continue
+            try:
+                text = archive.read(sidecar).decode("utf-8", errors="ignore")
+            except Exception:
+                continue
+            detected_symbols.update(match.upper() for match in MNQ_OUTRIGHT_RE.findall(text))
+            detected_dates.update(ISO_DATE_RE.findall(text))
+
+    result = {
         "members": len(members),
         "market_data_members": len(data_members),
         "symbology_sidecars": len(sidecars),
@@ -45,6 +65,40 @@ def _zip_inventory(path: Path) -> dict[str, object]:
         "compressed_bytes": int(compressed),
         "data_member_names": [Path(member.filename).name for member in data_members[:20]],
     }
+    if detected_symbols:
+        result["detected_mnq_quarterly_symbols"] = sorted(detected_symbols)
+        result["detected_mnq_contracts"] = len(detected_symbols)
+    if detected_dates:
+        dates = sorted(detected_dates)
+        result["metadata_date_min"] = dates[0]
+        result["metadata_date_max"] = dates[-1]
+    return result
+
+
+def _dbn_metadata(path: Path) -> dict[str, object]:
+    try:
+        import databento as db
+
+        store = db.DBNStore.from_file(path)
+        metadata = getattr(store, "metadata", None)
+        if metadata is None:
+            return {}
+        result: dict[str, object] = {}
+        for attribute in ("dataset", "schema", "stype_in", "stype_out", "start", "end", "limit"):
+            value = getattr(metadata, attribute, None)
+            if value is not None:
+                result[f"dbn_{attribute}"] = str(value)
+        symbols = getattr(metadata, "symbols", None)
+        if symbols:
+            symbol_values = [str(value) for value in symbols]
+            result["dbn_symbols"] = symbol_values[:100]
+            mnq = sorted({value.upper() for value in symbol_values if MNQ_OUTRIGHT_RE.fullmatch(value.strip())})
+            if mnq:
+                result["detected_mnq_quarterly_symbols"] = mnq
+                result["detected_mnq_contracts"] = len(mnq)
+        return result
+    except Exception as exc:
+        return {"dbn_metadata_warning": str(exc)}
 
 
 def _tabular_sample(path: Path, rows: int = 5000) -> dict[str, object]:
@@ -101,6 +155,11 @@ def inspect_source(path: str | Path) -> dict[str, object]:
         except (OSError, zipfile.BadZipFile) as exc:
             result["status"] = "FAIL"
             result["error"] = str(exc)
+        return result
+
+    if lower.endswith((".dbn", ".dbn.zst")):
+        result.update(_dbn_metadata(source))
+        result["status"] = "PASS" if result["supported"] else "FAIL"
         return result
 
     try:
