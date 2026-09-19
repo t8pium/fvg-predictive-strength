@@ -1,10 +1,12 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import pandas as pd
 
 from fvg_research.active_contract import (
+    _replace_with_retry,
     build_active_contract,
     cme_trade_date,
     is_quarterly_mnq_outright,
@@ -69,6 +71,36 @@ class TestActiveContract(unittest.TestCase):
             pd.DataFrame([row("2026-01-01 15:00Z", "MNQH26", 10, 101)]).to_csv(two, index=False)
             with self.assertRaisesRegex(ValueError, "Conflicting duplicate"):
                 build_active_contract([one, two], root / "a.parquet", root / "a.pkl")
+
+    def test_replace_retries_transient_windows_lock(self):
+        source = Path("source.partial")
+        target = Path("active_mnq.pkl")
+        with patch.object(
+            Path, "replace",
+            side_effect=[PermissionError(13, "file in use"), None],
+        ) as replace, patch("fvg_research.active_contract.time.sleep") as sleep:
+            _replace_with_retry(source, target, attempts=3, delay_seconds=0.01)
+        self.assertEqual(replace.call_count, 2)
+        sleep.assert_called_once_with(0.01)
+
+    def test_replace_reports_persistent_windows_lock(self):
+        source = Path("source.partial")
+        target = Path("active_mnq.pkl")
+        with patch.object(
+            Path, "replace",
+            side_effect=PermissionError(13, "file in use"),
+        ), patch("fvg_research.active_contract.time.sleep"):
+            with self.assertRaisesRegex(RuntimeError, "another Windows process kept it locked"):
+                _replace_with_retry(source, target, attempts=2, delay_seconds=0)
+
+    def test_non_lock_oserror_is_not_retried(self):
+        source = Path("source.partial")
+        target = Path("active_mnq.pkl")
+        with patch.object(Path, "replace", side_effect=OSError(5, "unrelated failure")), \
+             patch("fvg_research.active_contract.time.sleep") as sleep:
+            with self.assertRaises(OSError):
+                _replace_with_retry(source, target, attempts=3, delay_seconds=0.01)
+        sleep.assert_not_called()
 
 
 if __name__ == "__main__":
