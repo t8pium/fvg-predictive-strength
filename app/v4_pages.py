@@ -164,7 +164,7 @@ def event_explorer_page() -> None:
     g1, g2, g3 = st.columns(3)
     max_distance = float(g1.number_input("Max starting distance (ATR)", min_value=0.0, value=5.0, step=0.25))
     max_width = float(g2.number_input("Max FVG width (ATR)", min_value=0.0, value=3.0, step=0.25))
-    horizon = int(g3.selectbox("Outcome horizon (1m bars)", [1, 5, 15, 30, 60, 120, 240], index=4))
+    horizon = int(g3.selectbox("Outcome horizon (native bars)", [1, 3, 5, 10, 20, 60], index=2))
     outcome_filter = st.radio("Outcome filter", ["All", "Touched", "Not touched"], horizontal=True)
 
     filtered = catalog.loc[
