@@ -64,3 +64,7 @@ The v4 audit layer adds:
 Published v1 canonical scripts remain unchanged.
 
 Final validation rerun after fixing the ablation design to sample parents once and reuse the exact same population across every matching variant.
+
+## UI contrast/rendering repair
+
+Replaced theme-derived low-contrast colors with an explicit high-contrast dark palette, made custom HTML components compact to prevent Markdown code-block leakage, and added regression tests for card/callout rendering and repeat readability.
