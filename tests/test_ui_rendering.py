@@ -59,6 +59,32 @@ class TestUiRendering(unittest.TestCase):
         self.assertIn('TEXT = "#f8fafc"', source)
         self.assertIn('MUTED = "#cbd5e1"', source)
 
+    @staticmethod
+    def _contrast_ratio(foreground: str, background: str) -> float:
+        def luminance(value: str) -> float:
+            rgb = [int(value[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+            linear = [channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4 for channel in rgb]
+            return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+        first, second = luminance(foreground), luminance(background)
+        lighter, darker = max(first, second), min(first, second)
+        return (lighter + 0.05) / (darker + 0.05)
+
+    def test_primary_text_combinations_meet_wcag_aa(self):
+        pairs = [
+            (ui.TEXT, ui.BG),
+            (ui.TEXT, ui.SURFACE),
+            (ui.TEXT, ui.SURFACE_2),
+            (ui.MUTED, ui.SURFACE_2),
+            (ui.INFO_TEXT, ui.INFO_BG),
+            (ui.SUCCESS_TEXT, ui.SUCCESS_BG),
+            (ui.WARNING_TEXT, ui.WARNING_BG),
+            (ui.DANGER_TEXT, ui.DANGER_BG),
+        ]
+        for foreground, background in pairs:
+            with self.subTest(foreground=foreground, background=background):
+                self.assertGreaterEqual(self._contrast_ratio(foreground, background), 4.5)
+
 
 if __name__ == "__main__":
     unittest.main()
