@@ -22,6 +22,7 @@ class TestDashboardRoutes(unittest.TestCase):
             "Data Setup",
             "Full Reproduction",
             "Diagnostics",
+            "Temporal Regimes",
             "Performance",
             "Research v2",
             "Report",
