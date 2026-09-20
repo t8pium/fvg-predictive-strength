@@ -56,8 +56,8 @@ class TestUiRendering(unittest.TestCase):
     def test_ui_no_longer_derives_text_contrast_from_color_mix(self):
         source = (ROOT / "app" / "ui.py").read_text(encoding="utf-8")
         self.assertNotIn("color-mix(", source)
-        self.assertIn("--fvg-text: #f8fafc", source)
-        self.assertIn("--fvg-muted: #cbd5e1", source)
+        self.assertIn('TEXT = "#f8fafc"', source)
+        self.assertIn('MUTED = "#cbd5e1"', source)
 
 
 if __name__ == "__main__":
