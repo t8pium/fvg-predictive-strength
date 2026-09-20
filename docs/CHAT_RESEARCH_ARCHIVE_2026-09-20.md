@@ -849,3 +849,76 @@ At the time this archive was created:
 - Portfolio project page: https://t8pium.github.io/projects/fvg-predictive-strength/
 
 This file is the consolidated technical/research archive for the work developed through the project conversation.
+
+---
+
+## 19. Exact temporal heterogeneity / anomaly results archived from the project chat
+
+The final temporal pass added exact diagnostics beyond the high-level regime summary.
+
+### Broad heterogeneity
+
+Approximate p-values for matched-premium variation:
+
+- **Year:** attraction 0.0004; rejection 0.29
+- **Calendar month:** attraction 0.82; rejection 0.16
+- **Weekday:** attraction 0.10; rejection 0.92
+- **Session:** attraction 0.014; rejection 0.79
+- **Hour:** attraction 0.10; rejection 0.46
+- **Quarter:** attraction 0.019; rejection 0.28
+- **Week of year:** attraction 0.31; rejection 0.11
+
+This is one of the cleanest distinctions in the entire project: **attraction is regime-sensitive, while rejection is relatively temporally stable.**
+
+### Monthly time trend
+
+- attraction premium: **r ≈ -0.23**
+- rejection premium: **r ≈ -0.12**
+- 3-bar reaction magnitude: **r ≈ -0.25**
+
+The project therefore found no “FVGs only became effective recently” story.
+
+### Extreme diagnostic weeks
+
+- week of 2024-01-08: attraction **+6.17 pp**
+- week of 2020-10-12: attraction **-4.37 pp**
+- week of 2020-05-18: rejection **+14.8 pp**
+- week of 2022-08-08: rejection **-14.5 pp**
+
+### Extreme raw days
+
+Attraction:
+- 2026-07-03: **97.44%**
+- 2021-02-15: **97.27%**
+- 2023-12-26: **97.06%**
+- 2020-10-12: **82.16%**
+- 2022-07-05: **82.46%**
+- 2021-12-16: **83.64%**
+
+Rejection:
+- 2022-05-17: **68.61%**
+- 2023-11-24: **38.46%**
+
+### Day-of-month exploratory anomaly
+
+Matched rejection premium:
+- 6th: **+3.80 pp**
+- 15th: **+5.92 pp**
+- 23rd: **+4.47 pp**
+- 26th: **+4.48 pp**
+
+These are archived as hypothesis-generation results only. They should not be turned into calendar trading rules without preregistered replication.
+
+### Final research hierarchy from the complete chat
+
+The complete body of work ranks the “when does an FVG matter?” variables approximately as:
+
+1. **FVG age / freshness**
+2. **native timeframe**
+3. **market regime / quarter / year**
+4. **session**
+5. hour of day as exploratory
+6. recurring calendar month / weekday as weak
+7. isolated day/week/day-of-month spikes as regime diagnostics only
+
+The machine-readable version of these findings lives in `research_v2/findings/temporal_attraction_reaction_2026-09-20.json`.
