@@ -62,3 +62,5 @@ The v4 audit layer adds:
 - versioned release bundling and GitHub Release automation.
 
 Published v1 canonical scripts remain unchanged.
+
+Final v4 release validation runs against the complete main state after increasing the synthetic common-parent test sample rather than weakening the ablation eligibility rule.
