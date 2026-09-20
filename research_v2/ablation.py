@@ -26,13 +26,17 @@ def _custom_controls(
     n_controls: int,
     max_events: int,
     seed: int,
+    excluded_fvg_index: pd.DatetimeIndex | None = None,
 ) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
     sample = events.copy()
     if len(sample) > max_events:
         sample = sample.iloc[np.sort(rng.choice(len(sample), max_events, replace=False))]
     sample = sample.join(state[[c for c in group_columns if c in state.columns]], how="left")
-    pool = candidate_zones(state, events.index).dropna(subset=["atr14", "volatility"])
+    pool = candidate_zones(
+        state,
+        excluded_fvg_index if excluded_fvg_index is not None else events.index,
+    ).dropna(subset=["atr14", "volatility"])
     output = []
 
     groups = [(None, sample)] if not group_columns else sample.dropna(subset=group_columns).groupby(group_columns, dropna=False)
@@ -96,7 +100,12 @@ def run_ablation(
 ) -> pd.DataFrame:
     """Ablate matching assumptions on one common set of eligible parent FVGs."""
     state = market_state(bars)
-    events = detect_fvgs(bars)
+    all_events = detect_fvgs(bars)
+    events = all_events.copy()
+    if len(events) > max_events:
+        rng = np.random.default_rng(seed)
+        positions = np.sort(rng.choice(len(events), max_events, replace=False))
+        events = events.iloc[positions].copy()
 
     controls_by_variant: dict[str, pd.DataFrame] = {}
     parent_sets: list[set[pd.Timestamp]] = []
@@ -106,8 +115,9 @@ def run_ablation(
             state,
             group_columns=group_columns,
             n_controls=n_controls,
-            max_events=max_events,
-            seed=seed + number,
+            max_events=len(events),
+            seed=seed,
+            excluded_fvg_index=all_events.index,
         )
         if controls.empty:
             continue
