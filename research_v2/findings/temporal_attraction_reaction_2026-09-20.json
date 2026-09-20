@@ -106,5 +106,150 @@
     "Reaction/rejection is smaller but more temporally stable.",
     "No convincing recurring month or weekday edge was established.",
     "Specific day/week spikes are regime evidence, not recurring calendar rules."
+  ],
+  "era_attraction_pp": {
+    "2020-2022": 1.12,
+    "2023-2024": 1.23,
+    "2025-2026_partial": 0.66
+  },
+  "time_trend_correlation": {
+    "attraction_monthly_r": -0.23,
+    "rejection_monthly_r": -0.12,
+    "reaction_3bar_monthly_r": -0.25
+  },
+  "heterogeneity_p_approx": {
+    "year": {
+      "attraction": 0.0004,
+      "rejection": 0.29
+    },
+    "calendar_month": {
+      "attraction": 0.82,
+      "rejection": 0.16
+    },
+    "weekday": {
+      "attraction": 0.1,
+      "rejection": 0.92
+    },
+    "session": {
+      "attraction": 0.014,
+      "rejection": 0.79
+    },
+    "hour": {
+      "attraction": 0.1,
+      "rejection": 0.46
+    },
+    "quarter": {
+      "attraction": 0.019,
+      "rejection": 0.28
+    },
+    "week_of_year": {
+      "attraction": 0.31,
+      "rejection": 0.11
+    }
+  },
+  "rejection_by_touch_hour_pp": {
+    "02:00": 4.51,
+    "19:00": 4.15,
+    "21:00": 3.1,
+    "09:00": 3.07,
+    "04:00": 2.89,
+    "01:00": 2.75,
+    "15:00": 0.48,
+    "22:00": 0.89,
+    "10:00": 0.93,
+    "11:00": 1.1,
+    "03:00": 1.13,
+    "05:00": 1.13
+  },
+  "historical_month_attraction_pp": {
+    "2020-04": 2.71,
+    "2021-08": 2.68,
+    "2020-03": 2.58,
+    "2021-09": 2.54,
+    "2024-06": 2.48,
+    "2020-12": 2.32,
+    "2023-01": 2.11
+  },
+  "historical_month_rejection_pp": {
+    "2020-04": 5.88,
+    "2026-04": 5.26,
+    "2021-02": 5.03,
+    "2025-07": 4.65,
+    "2026-06": 4.45
+  },
+  "quarter_attraction_pp": {
+    "2021-Q3": 2.16,
+    "2024-Q2": 1.83,
+    "2020-Q2": 1.81,
+    "2025-Q1": 0.25,
+    "2022-Q2": 0.23,
+    "2025-Q2": -0.31
+  },
+  "extreme_weeks": {
+    "attraction_high": {
+      "week_start": "2024-01-08",
+      "difference_pp": 6.17
+    },
+    "attraction_low": {
+      "week_start": "2020-10-12",
+      "difference_pp": -4.37
+    },
+    "rejection_high": {
+      "week_start": "2020-05-18",
+      "difference_pp": 14.8
+    },
+    "rejection_low": {
+      "week_start": "2022-08-08",
+      "difference_pp": -14.5
+    }
+  },
+  "extreme_days": {
+    "raw_attraction_high": [
+      {
+        "date": "2026-07-03",
+        "rate_pct": 97.44
+      },
+      {
+        "date": "2021-02-15",
+        "rate_pct": 97.27
+      },
+      {
+        "date": "2023-12-26",
+        "rate_pct": 97.06
+      }
+    ],
+    "raw_attraction_low": [
+      {
+        "date": "2020-10-12",
+        "rate_pct": 82.16
+      },
+      {
+        "date": "2022-07-05",
+        "rate_pct": 82.46
+      },
+      {
+        "date": "2021-12-16",
+        "rate_pct": 83.64
+      }
+    ],
+    "raw_rejection_high": {
+      "date": "2022-05-17",
+      "rate_pct": 68.61
+    },
+    "raw_rejection_low": {
+      "date": "2023-11-24",
+      "rate_pct": 38.46
+    }
+  },
+  "day_of_month_rejection_pp": {
+    "6": 3.8,
+    "15": 5.92,
+    "23": 4.47,
+    "26": 4.48
+  },
+  "notes": [
+    "Exact day/week/hour extremes are exploratory multiple-comparison diagnostics, not recurring calendar rules.",
+    "Some historical month attraction episodes survived an approximate FDR screen; reaction month cells did not survive the same screen.",
+    "Day-of-month anomalies should be preregistered before any further use."
   ]
 }
