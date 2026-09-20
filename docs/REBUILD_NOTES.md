@@ -62,3 +62,5 @@ The v4 audit layer adds:
 - versioned release bundling and GitHub Release automation.
 
 Published v1 canonical scripts remain unchanged.
+
+Final validation rerun after fixing the ablation design to sample parents once and reuse the exact same population across every matching variant.
