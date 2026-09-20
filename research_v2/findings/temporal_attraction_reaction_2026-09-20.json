@@ -1,0 +1,110 @@
+{
+  "status": "exploratory_extended_research",
+  "frozen_v1": false,
+  "market": "MNQ",
+  "period": [
+    "2020-01-01",
+    "2026-07-10"
+  ],
+  "sample": {
+    "eligible_fvg_parents_approx": 150000,
+    "matched_controls_approx": 449640
+  },
+  "definitions": {
+    "attraction": "near-edge touch within 60 minutes",
+    "rejection": "after first touch, move one full gap-width away before traversing the far edge",
+    "reaction_3bar": "ATR-normalized movement away three bars after touch"
+  },
+  "overall": {
+    "attraction": {
+      "fvg": 0.9098,
+      "control": 0.8993,
+      "difference_pp": 1.05,
+      "ci95_pp": [
+        0.88,
+        1.22
+      ]
+    },
+    "rejection": {
+      "fvg": 0.5266,
+      "control": 0.5093,
+      "difference_pp": 1.93,
+      "ci95_pp": [
+        1.51,
+        2.35
+      ]
+    },
+    "reaction_3bar_atr": {
+      "fvg": 0.02,
+      "control": -0.007,
+      "difference": 0.032,
+      "ci95": [
+        0.021,
+        0.043
+      ]
+    }
+  },
+  "attraction_by_year_pp": {
+    "2020": 1.56,
+    "2021": 1.35,
+    "2022": 0.44,
+    "2023": 1.18,
+    "2024": 1.28,
+    "2025": 0.44,
+    "2026_partial": 1.08
+  },
+  "rejection_by_year_pp": {
+    "2020": 2.97,
+    "2021": 1.78,
+    "2022": 1.52,
+    "2023": 1.26,
+    "2024": 2.07,
+    "2025": 1.6,
+    "2026_partial": 2.62
+  },
+  "attraction_by_formation_session_pp": {
+    "asia": 1.28,
+    "london": 1.15,
+    "ny_premarket": 0.19,
+    "ny_am": 0.68,
+    "ny_lunch": 0.71,
+    "ny_pm": 0.91,
+    "postmarket": 1.67
+  },
+  "rejection_by_touch_session_pp": {
+    "ny_premarket": 2.97,
+    "asia": 2.43,
+    "london": 2.34,
+    "ny_lunch": 1.73,
+    "ny_pm": 1.33,
+    "postmarket": 1.28,
+    "ny_am": 0.99
+  },
+  "native_timeframe_attraction_5bar_pp": {
+    "1m": 2.7,
+    "5m": 2.16,
+    "15m": 0.63,
+    "1H": 0.6,
+    "4H": -1.13
+  },
+  "native_timeframe_rejection_pp": {
+    "1m": 2.32,
+    "5m": 1.22,
+    "15m": 1.41,
+    "1H": 0.91,
+    "4H": 1.55
+  },
+  "age_decay_1m_pp": {
+    "1_to_3": 3.09,
+    "3_to_5": -0.21,
+    "5_to_10": -0.08,
+    "10_to_20": -1.86
+  },
+  "interpretation": [
+    "Attraction is more regime-dependent than rejection.",
+    "Attraction is strongest immediately after formation and on lower timeframes.",
+    "Reaction/rejection is smaller but more temporally stable.",
+    "No convincing recurring month or weekday edge was established.",
+    "Specific day/week spikes are regime evidence, not recurring calendar rules."
+  ]
+}
