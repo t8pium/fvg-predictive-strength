@@ -88,15 +88,15 @@ class TestV4ResearchPlatform(unittest.TestCase):
         self.assertGreater(grossish["net_mean_R"], costly["net_mean_R"])
 
     def test_placebo_and_ablation_smoke_on_synthetic_data(self):
-        bars = synthetic_ohlcv(n=3000, seed=77)
-        placebo = placebo_suite(bars, horizon=15, max_events=40, seed=77)
+        bars = synthetic_ohlcv(n=8000, seed=77)
+        placebo = placebo_suite(bars, horizon=15, max_events=200, seed=77)
         self.assertGreaterEqual(len(placebo), 3)
         self.assertIn("Real FVG", placebo["series"].tolist())
         real_n = int(placebo.loc[placebo["series"].eq("Real FVG"), "N"].iloc[0])
         matched_n = int(placebo.loc[placebo["series"].eq("State-matched ordinary zone"), "N"].iloc[0])
         self.assertEqual(real_n, matched_n)
 
-        ablation = run_ablation(bars, horizon=15, max_events=40, n_controls=1, seed=77)
+        ablation = run_ablation(bars, horizon=15, max_events=200, n_controls=1, seed=77)
         self.assertGreaterEqual(len(ablation), 2)
         self.assertTrue({"Variant", "Difference (pp)"}.issubset(ablation.columns))
         self.assertEqual(ablation["Parents"].nunique(), 1)
