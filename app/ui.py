@@ -6,8 +6,8 @@ import streamlit as st
 
 
 # Explicit colors are intentional. The previous theme derived card/text colors
-# from Streamlit variables with color-mix(), which produced poor contrast under
-# some browser/Streamlit dark-theme combinations.
+# from Streamlit theme variables using computed blending, which produced poor
+# contrast under some browser/Streamlit dark-theme combinations.
 BG = "#0b0f17"
 SIDEBAR = "#11131d"
 SURFACE = "#111827"
