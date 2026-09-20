@@ -372,3 +372,87 @@ The strongest conditioning variables are:
 7. individual day/week spikes as regime diagnostics, not recurring calendar rules.
 
 The next proper test should preregister the strongest session/hour hypotheses and test them on sealed later data or another market.
+
+---
+
+## Exact heterogeneity tests and anomaly scan
+
+The broader temporal scan also quantified whether the matched FVG premium changes systematically across calendar/time buckets. These values are **exploratory diagnostics** and should not be treated as production filters without preregistration and later-data replication.
+
+Approximate heterogeneity p-values:
+
+| Dimension | Attraction | Rejection |
+|---|---:|---:|
+| Year | **0.0004** | 0.29 |
+| Calendar month | 0.82 | 0.16 |
+| Weekday | 0.10 | 0.92 |
+| Session | **0.014** | 0.79 |
+| Hour of day | 0.10 | 0.46 |
+| Quarter | **0.019** | 0.28 |
+| ISO week of year | 0.31 | 0.11 |
+
+This strengthens the main interpretation: **attraction varies materially with regime; rejection is much more stable across ordinary calendar partitions.**
+
+### Trend through time
+
+Using monthly matched observations:
+
+- attraction premium vs time: **Pearson r ≈ -0.23**
+- rejection premium vs time: **r ≈ -0.12**
+- 3-bar reaction magnitude vs time: **r ≈ -0.25**
+
+There is therefore no evidence that FVGs only began to work recently. The attraction component has, if anything, drifted somewhat weaker over the sample.
+
+### Extreme historical weeks
+
+Examples from the diagnostic scan:
+
+- attraction high: week of **2024-01-08 → +6.17 pp**
+- attraction low: week of **2020-10-12 → -4.37 pp**
+- rejection high: week of **2020-05-18 → +14.8 pp**
+- rejection low: week of **2022-08-08 → -14.5 pp**
+
+These swings are much larger than the long-run mean, but they do **not** recur reliably by calendar week. They are better interpreted as market-regime episodes.
+
+### Extreme raw days
+
+Raw 60-minute attraction examples:
+
+- **2026-07-03:** 97.44%
+- **2021-02-15:** 97.27%
+- **2023-12-26:** 97.06%
+- **2020-10-12:** 82.16%
+- **2022-07-05:** 82.46%
+- **2021-12-16:** 83.64%
+
+Raw first-touch rejection examples:
+
+- **2022-05-17:** 68.61%
+- **2023-11-24:** 38.46%
+
+These observations show how violently FVG behavior can vary on individual days. They are **descriptive regime diagnostics**, not evidence that those calendar dates should repeat.
+
+### Day-of-month anomaly
+
+An exploratory grouping by day number of the month produced unusually positive rejection premiums on:
+
+- 6th: **+3.80 pp**
+- 15th: **+5.92 pp**
+- 23rd: **+4.47 pp**
+- 26th: **+4.48 pp**
+
+This is intentionally not promoted as a trading rule. There is no established causal reason the calendar day itself should matter; it may proxy recurring macro, expiry, options, or liquidity conditions. Any further use should be preregistered.
+
+### Multiple-comparison caution
+
+Some specific historical attraction months survived an approximate FDR screen, while the strongest reaction-month cells did not survive the same screen. Exact hour/week/day extremes face even greater data-mining risk.
+
+The proper hierarchy remains:
+
+1. freshness / age;
+2. native timeframe;
+3. regime / quarter / year;
+4. session;
+5. hour as exploratory;
+6. weekday/month as weak;
+7. isolated day/week/day-of-month effects as hypothesis generation only.
