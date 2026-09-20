@@ -64,3 +64,5 @@ The v4 audit layer adds:
 Published v1 canonical scripts remain unchanged.
 
 Final validation rerun after fixing the ablation design to sample parents once and reuse the exact same population across every matching variant.
+
+UI contrast/rendering repair validation rerun after removing stale derived-color wording from the regression target.
