@@ -81,6 +81,54 @@ def _published_figure_html(root: Path) -> str:
     return "\n".join(cards)
 
 
+def _temporal_extension_html(root: Path) -> str:
+    """Render the optional exploratory temporal extension if its frozen summary exists."""
+    path = root / "research_v2" / "findings" / "temporal_attraction_reaction_2026-09-20.json"
+    if not path.is_file():
+        return ""
+    data = json.loads(path.read_text(encoding="utf-8"))
+    overall = data["overall"]
+    attraction = overall["attraction"]
+    rejection = overall["rejection"]
+    reaction = overall["reaction_3bar_atr"]
+    years = data.get("attraction_by_year_pp", {})
+    sessions = data.get("attraction_by_formation_session_pp", {})
+    year_rows = "".join(
+        f"<tr><th>{escape(str(year))}</th><td>{float(value):+.2f} pp</td></tr>"
+        for year, value in years.items()
+    )
+    session_rows = "".join(
+        f"<tr><th>{escape(str(name).replace('_', ' ').title())}</th><td>{float(value):+.2f} pp</td></tr>"
+        for name, value in sessions.items()
+    )
+    return f"""
+<section class="experiment" id="temporal-extension">
+  <div class="eyebrow">Exploratory extension · 2026-09-20</div>
+  <h2>When are FVGs most predictive?</h2>
+  <p class="question">The temporal extension separates attraction from first-touch reaction/rejection across year, session, hour and native timeframe.</p>
+  <div class="callout"><strong>Main finding.</strong> Attraction is more regime-dependent; reaction/rejection is smaller but more temporally stable.</div>
+  <div class="metric-grid">
+    <div class="metric"><div class="metric-label">60m near-edge attraction</div><div class="metric-value">{attraction["fvg"] * 100:.2f}% vs {attraction["control"] * 100:.2f}% · {attraction["difference_pp"]:+.2f} pp</div></div>
+    <div class="metric"><div class="metric-label">First-touch rejection</div><div class="metric-value">{rejection["fvg"] * 100:.2f}% vs {rejection["control"] * 100:.2f}% · {rejection["difference_pp"]:+.2f} pp</div></div>
+    <div class="metric"><div class="metric-label">3-bar move away</div><div class="metric-value">{reaction["difference"]:+.3f} ATR incremental</div></div>
+    <div class="metric"><div class="metric-label">Strongest timing variable</div><div class="metric-value">FVG age / freshness</div></div>
+  </div>
+  <div class="two-col">
+    <div>
+      <h3>Attraction premium by year</h3>
+      <table class="provenance">{year_rows}</table>
+    </div>
+    <div>
+      <h3>Attraction premium by formation session</h3>
+      <table class="provenance">{session_rows}</table>
+    </div>
+  </div>
+  <div class="warning"><strong>Status.</strong> This is newer exploratory / extended research on the same MNQ history, not part of the frozen published v1 metrics. Weekday and recurring calendar-month effects were weak; individual day/week/hour spikes are treated as regime diagnostics rather than production rules.</div>
+  <p><a href="https://github.com/t8pium/fvg-predictive-strength/blob/main/docs/TEMPORAL_ATTRACTION_REACTION_STUDY.md">Read the complete temporal study ↗</a></p>
+</section>
+"""
+
+
 def build_report(
     reference: dict,
     experiments: dict,
@@ -197,6 +245,8 @@ code{background:#151d27;padding:2px 5px;border-radius:5px}@media(max-width:850px
 </section>
 
 {''.join(sections)}
+
+{_temporal_extension_html(root)}
 
 <section class="experiment" id="platform-v4">
   <div class="eyebrow">Research Platform v4</div>
