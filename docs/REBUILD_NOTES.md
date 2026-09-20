@@ -68,3 +68,7 @@ Final validation rerun after fixing the ablation design to sample parents once a
 ## UI readability repair
 
 The local Research Lab now uses an explicit high-contrast dark palette, compact single-line custom HTML to prevent Markdown code-block leakage, a fixed Streamlit theme, and WCAG-AA contrast regression checks for all primary card/callout text combinations.
+
+## Research archive + temporal extension
+
+The full project-chat research archive, temporal attraction/rejection study, machine-readable temporal findings, generated-report section, and Research Lab temporal-regime page were synchronized with Notion and the public portfolio on 2026-09-20.
