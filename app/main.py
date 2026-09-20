@@ -62,6 +62,7 @@ from .v4_pages import (
 
 REFERENCE = json.loads((ROOT / "reference_results" / "reference_metrics.json").read_text(encoding="utf-8"))
 PROVENANCE = json.loads((ROOT / "reference_results" / "manifest.json").read_text(encoding="utf-8"))
+TEMPORAL = json.loads((ROOT / "research_v2" / "findings" / "temporal_attraction_reaction_2026-09-20.json").read_text(encoding="utf-8"))
 GITHUB = "https://github.com/t8pium/fvg-predictive-strength"
 REPORT = "https://t8pium.github.io/projects/fvg-predictive-strength/"
 STATIC_REPORT = "https://t8pium.github.io/fvg-predictive-strength/"
@@ -763,6 +764,256 @@ def diagnostics_page() -> None:
                 )
 
 
+def temporal_regime_page() -> None:
+    hero(
+        "Exploratory extension · same MNQ history",
+        "Temporal attraction & rejection regimes",
+        "When does the FVG label add more information as an attraction zone, and when does it add more information after first touch as a rejection/reaction zone?",
+        ["2020–2026", "Matched controls", "Year / session / hour", "Not frozen v1"],
+    )
+    callout(
+        "Status",
+        "This is newer exploratory / extended research on the same MNQ dataset. It is intentionally separated from the frozen published v1 metrics.",
+        kind="warning",
+    )
+
+    overall = TEMPORAL["overall"]
+    attraction = overall["attraction"]
+    rejection = overall["rejection"]
+    reaction = overall["reaction_3bar_atr"]
+
+    cols = st.columns(3)
+    cols[0].metric(
+        "60m attraction premium",
+        f"{attraction['difference_pp']:+.2f} pp",
+        f"{attraction['fvg'] * 100:.2f}% vs {attraction['control'] * 100:.2f}%",
+    )
+    cols[1].metric(
+        "First-touch rejection premium",
+        f"{rejection['difference_pp']:+.2f} pp",
+        f"{rejection['fvg'] * 100:.2f}% vs {rejection['control'] * 100:.2f}%",
+    )
+    cols[2].metric(
+        "3-bar move-away premium",
+        f"{reaction['difference']:+.3f} ATR",
+        f"{reaction['fvg']:+.3f} vs {reaction['control']:+.3f}",
+    )
+
+    callout(
+        "Main finding",
+        "Attraction is more regime-dependent. Reaction/rejection is smaller, but more temporally stable. FVG age and native timeframe are stronger conditioning variables than recurring weekday or calendar-month seasonality.",
+        kind="success",
+    )
+
+    section_header(
+        "Year",
+        "Attraction changes by regime; rejection is more stable",
+        "The attraction premium varies materially across years. The rejection premium remains positive in each year shown but its broad year-to-year heterogeneity is much weaker.",
+    )
+    years = sorted(TEMPORAL["attraction_by_year_pp"])
+    yearly = pd.DataFrame(
+        {
+            "Year": years,
+            "Attraction premium (pp)": [TEMPORAL["attraction_by_year_pp"][year] for year in years],
+            "Rejection premium (pp)": [TEMPORAL["rejection_by_year_pp"][year] for year in years],
+        }
+    )
+    st.dataframe(yearly, width="stretch", hide_index=True)
+    long_year = yearly.melt(id_vars="Year", var_name="Behavior", value_name="Premium (pp)")
+    st.plotly_chart(
+        px.bar(
+            long_year,
+            x="Year",
+            y="Premium (pp)",
+            color="Behavior",
+            barmode="group",
+            title="Matched FVG premium by year",
+        ),
+        width="stretch",
+        config=CHART_CONFIG,
+    )
+
+    era = pd.DataFrame(
+        [{"Era": key, "Attraction premium (pp)": value} for key, value in TEMPORAL.get("era_attraction_pp", {}).items()]
+    )
+    if len(era):
+        st.markdown("#### Era comparison")
+        st.dataframe(era, width="stretch", hide_index=True)
+        callout(
+            "No recent strengthening",
+            "The latest era has a smaller attraction premium than 2020–2024. The data does not support the idea that FVG attraction only started working recently.",
+        )
+
+    section_header(
+        "Sessions",
+        "Formation-session attraction vs touch-session rejection",
+        "High raw revisit probability does not necessarily mean a large FVG-specific effect. NY premarket is the clearest example.",
+    )
+    formation = pd.DataFrame(
+        [
+            {"Session": key.replace("_", " ").title(), "Attraction premium (pp)": value}
+            for key, value in TEMPORAL["attraction_by_formation_session_pp"].items()
+        ]
+    )
+    touch = pd.DataFrame(
+        [
+            {"Session": key.replace("_", " ").title(), "Rejection premium (pp)": value}
+            for key, value in TEMPORAL["rejection_by_touch_session_pp"].items()
+        ]
+    )
+    left, right = st.columns(2)
+    with left:
+        st.plotly_chart(
+            px.bar(formation, x="Session", y="Attraction premium (pp)", title="Attraction premium by FVG formation session"),
+            width="stretch",
+            config=CHART_CONFIG,
+        )
+        st.dataframe(formation, width="stretch", hide_index=True)
+    with right:
+        st.plotly_chart(
+            px.bar(touch, x="Session", y="Rejection premium (pp)", title="Rejection premium by actual touch session"),
+            width="stretch",
+            config=CHART_CONFIG,
+        )
+        st.dataframe(touch, width="stretch", hide_index=True)
+
+    callout(
+        "Premarket lesson",
+        "NY premarket had one of the highest raw FVG touch rates, but only a very small matched attraction premium. Ordinary nearby zones were also revisited extremely often there.",
+    )
+
+    section_header(
+        "Hour of day",
+        "Interesting reaction windows, but not confirmed time filters",
+        "These are descriptive ET-hour candidates. The overall hour-of-day heterogeneity test was not strong enough to establish a production rule.",
+    )
+    hour_frame = pd.DataFrame(
+        [{"ET hour": hour, "Rejection premium (pp)": value} for hour, value in TEMPORAL.get("rejection_by_touch_hour_pp", {}).items()]
+    ).sort_values("Rejection premium (pp)", ascending=False)
+    if len(hour_frame):
+        st.dataframe(hour_frame, width="stretch", hide_index=True)
+        st.plotly_chart(
+            px.bar(hour_frame, x="ET hour", y="Rejection premium (pp)", title="Descriptive first-touch rejection premium by ET hour"),
+            width="stretch",
+            config=CHART_CONFIG,
+        )
+
+    section_header(
+        "Native timeframe",
+        "Attraction decays with timeframe; reaction stays modestly positive",
+        "This is one of the strongest timing results in the entire project.",
+    )
+    tf_order = ["1m", "5m", "15m", "1H", "4H"]
+    tf_frame = pd.DataFrame(
+        {
+            "Timeframe": tf_order,
+            "Attraction premium (pp)": [TEMPORAL["native_timeframe_attraction_5bar_pp"][tf] for tf in tf_order],
+            "Rejection premium (pp)": [TEMPORAL["native_timeframe_rejection_pp"][tf] for tf in tf_order],
+        }
+    )
+    st.dataframe(tf_frame, width="stretch", hide_index=True)
+    st.plotly_chart(
+        px.line(
+            tf_frame.melt(id_vars="Timeframe", var_name="Behavior", value_name="Premium (pp)"),
+            x="Timeframe",
+            y="Premium (pp)",
+            color="Behavior",
+            markers=True,
+            title="Attraction versus rejection across native timeframe",
+        ),
+        width="stretch",
+        config=CHART_CONFIG,
+    )
+
+    section_header(
+        "Freshness",
+        "FVG age is the clearest temporal variable",
+        "If an FVG contains unusual attraction information, the incremental effect is concentrated in the first few bars after formation.",
+    )
+    age = pd.DataFrame(
+        [
+            {"Age window": key.replace("_", "→").replace("to", ""), "Incremental attraction (pp)": value}
+            for key, value in TEMPORAL["age_decay_1m_pp"].items()
+        ]
+    )
+    age["Age window"] = ["1→3 bars", "3→5 bars", "5→10 bars", "10→20 bars"]
+    st.dataframe(age, width="stretch", hide_index=True)
+    st.plotly_chart(
+        px.bar(age, x="Age window", y="Incremental attraction (pp)", title="1m conditional attraction premium by FVG age"),
+        width="stretch",
+        config=CHART_CONFIG,
+    )
+
+    section_header(
+        "Calendar structure",
+        "Month and weekday effects are weak; isolated regimes can still spike",
+        "Specific months, weeks or days can look extreme, but that is different from a recurring calendar edge.",
+    )
+    quarter = pd.DataFrame(
+        [{"Quarter": key, "Attraction premium (pp)": value} for key, value in TEMPORAL.get("quarter_attraction_pp", {}).items()]
+    )
+    months = pd.DataFrame(
+        [{"Historical month": key, "Attraction premium (pp)": value} for key, value in TEMPORAL.get("historical_month_attraction_pp", {}).items()]
+    )
+    ql, qr = st.columns(2)
+    with ql:
+        st.markdown("#### Selected quarter regimes")
+        st.dataframe(quarter, width="stretch", hide_index=True)
+    with qr:
+        st.markdown("#### Stronger historical month episodes")
+        st.dataframe(months, width="stretch", hide_index=True)
+
+    hetero_rows = []
+    for dimension, values in TEMPORAL.get("heterogeneity_p_approx", {}).items():
+        hetero_rows.append(
+            {
+                "Dimension": dimension.replace("_", " ").title(),
+                "Attraction p (approx)": values.get("attraction"),
+                "Rejection p (approx)": values.get("rejection"),
+            }
+        )
+    if hetero_rows:
+        st.markdown("#### Broad temporal heterogeneity tests")
+        st.dataframe(pd.DataFrame(hetero_rows), width="stretch", hide_index=True)
+
+    with st.expander("Extreme week / day diagnostics"):
+        st.json(
+            {
+                "extreme_weeks": TEMPORAL.get("extreme_weeks", {}),
+                "extreme_days": TEMPORAL.get("extreme_days", {}),
+                "day_of_month_rejection_pp": TEMPORAL.get("day_of_month_rejection_pp", {}),
+            }
+        )
+        st.warning(
+            "These are multiple-comparison diagnostics. They are evidence that regimes can become extreme, not evidence that the same calendar date will repeat."
+        )
+
+    section_header(
+        "Current interpretation",
+        "What the temporal study changes",
+        "The data is more consistent with two related but different mechanisms than with one universal FVG force.",
+    )
+    left, right = st.columns(2)
+    with left:
+        info_card(
+            "Attraction",
+            "Short-lived, strongest on lower timeframes, strongest when fresh, and materially regime-dependent across years/quarters/sessions.",
+            "~+1 pp long-run matched premium",
+        )
+    with right:
+        info_card(
+            "Reaction / rejection",
+            "Smaller but more stable through time and positive across the tested native timeframes; exact session/hour rankings remain exploratory.",
+            "~+2 pp long-run matched premium",
+        )
+
+    st.markdown(
+        f"[Full temporal study ↗]({GITHUB}/blob/main/docs/TEMPORAL_ATTRACTION_REACTION_STUDY.md) · "
+        f"[Machine-readable findings ↗]({GITHUB}/blob/main/research_v2/findings/temporal_attraction_reaction_2026-09-20.json) · "
+        f"[Full chat research archive ↗]({GITHUB}/blob/main/docs/CHAT_RESEARCH_ARCHIVE_2026-09-20.md)"
+    )
+
+
 def performance_page() -> None:
     hero(
         "Machine-specific timing",
@@ -1095,6 +1346,22 @@ def home_page() -> None:
     glossary()
 
     section_header(
+        "Latest extension",
+        "When are FVGs most predictive?",
+        "A newer temporal study separates attraction from first-touch rejection across year, session, hour, timeframe and FVG age.",
+    )
+    cols = st.columns(3)
+    with cols[0]:
+        info_card("60m attraction premium", "FVGs were reached slightly more often than tightly matched ordinary zones.", "+1.05 pp")
+    with cols[1]:
+        info_card("First-touch rejection premium", "After touch, FVGs rejected slightly more often than matched ordinary zones.", "+1.93 pp")
+    with cols[2]:
+        info_card("Strongest timing result", "Freshness and native timeframe mattered more than recurring weekday/month seasonality.", "Age > calendar")
+    if st.button("Open temporal regime study →", width="stretch"):
+        st.session_state["page"] = "Temporal Regimes"
+        st.rerun()
+
+    section_header(
         "Reproducibility",
         "Read immediately; reproduce when you want",
         "Frozen evidence, provenance and source are visible without data. Full local reproduction is a separate workflow so the research remains inspectable even if a user never downloads licensed market history.",
@@ -1243,6 +1510,9 @@ def sidebar() -> None:
     if st.button("Diagnostics", width="stretch"):
         st.session_state["page"] = "Diagnostics"
         st.rerun()
+    if st.button("Temporal regimes", width="stretch"):
+        st.session_state["page"] = "Temporal Regimes"
+        st.rerun()
     if st.button("Stability atlas", width="stretch"):
         st.session_state["page"] = "Stability Atlas"
         st.rerun()
@@ -1334,6 +1604,8 @@ def main() -> None:
         event_explorer_page()
     elif page == "Diagnostics":
         diagnostics_page()
+    elif page == "Temporal Regimes":
+        temporal_regime_page()
     elif page == "Stability Atlas":
         stability_atlas_page(REFERENCE)
     elif page == "Power":
