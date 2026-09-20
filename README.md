@@ -19,6 +19,8 @@
 | Read the scientific limitations | [Scientific audit](docs/SCIENTIFIC_AUDIT.md) |
 | Understand the app/demo/reproduction tools | [Research Platform Guide](docs/PLATFORM_GUIDE.md) |
 | Reproduce the study locally | Download ZIP → extract → double-click **START_HERE.bat** |
+| Read the complete project-chat research archive | [Full research & platform archive](docs/CHAT_RESEARCH_ARCHIVE_2026-09-20.md) |
+| Read the temporal attraction/rejection extension | [Temporal attraction & reaction study](docs/TEMPORAL_ATTRACTION_REACTION_STUDY.md) |
 
 ## Study at a glance
 
@@ -36,6 +38,22 @@
 ![Matched FVG advantage](reference_results/figures/02_matched_advantage.svg)
 
 ![Chronological robustness](reference_results/figures/04_oos_robustness.svg)
+
+## New temporal attraction / rejection extension
+
+A newer exploratory study on the **same MNQ history** asks when FVGs have the most incremental value as attraction zones and as reaction/rejection zones.
+
+Headline matched results:
+
+| Outcome | FVG | Matched ordinary zone | Excess |
+|---|---:|---:|---:|
+| 60m near-edge attraction | **90.98%** | 89.93% | **+1.05 pp** |
+| First-touch rejection | **52.66%** | 50.93% | **+1.93 pp** |
+| 3-bar move away after touch | **+0.020 ATR** | -0.007 ATR | **+0.032 ATR** |
+
+The main finding is that **attraction is more regime-dependent**, while **reaction/rejection is smaller but more temporally stable**. FVG age and native chart timeframe are stronger conditioning variables than recurring weekday or calendar-month seasonality.
+
+This extension is deliberately separated from the frozen published v1 metrics. Read the full methodology, year/session/hour breakdowns and caveats in [docs/TEMPORAL_ATTRACTION_REACTION_STUDY.md](docs/TEMPORAL_ATTRACTION_REACTION_STUDY.md).
 
 ## Research architecture
 
