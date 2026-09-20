@@ -62,3 +62,5 @@ The v4 audit layer adds:
 - versioned release bundling and GitHub Release automation.
 
 Published v1 canonical scripts remain unchanged.
+
+Final v4 release-candidate validation covers the common-parent placebo/ablation refinements, multi-timeframe event explorer, preregistration verification, DBN/ZIP preflight metadata, v4 report section and strengthened v4 tests.
