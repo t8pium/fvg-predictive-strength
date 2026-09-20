@@ -64,3 +64,7 @@ The v4 audit layer adds:
 Published v1 canonical scripts remain unchanged.
 
 Final validation rerun after fixing the ablation design to sample parents once and reuse the exact same population across every matching variant.
+
+## UI readability repair
+
+The local Research Lab now uses an explicit high-contrast dark palette, compact single-line custom HTML to prevent Markdown code-block leakage, a fixed Streamlit theme, and WCAG-AA contrast regression checks for all primary card/callout text combinations.
