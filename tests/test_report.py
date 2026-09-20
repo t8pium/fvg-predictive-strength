@@ -19,6 +19,9 @@ class TestStaticReport(unittest.TestCase):
         self.assertIn("<!doctype html>", html.lower())
         self.assertIn("Published conclusion", html)
         self.assertIn("Research architecture", html)
+        self.assertIn("When are FVGs most predictive?", html)
+        self.assertIn("+1.05 pp", html)
+        self.assertIn("+1.93 pp", html)
         self.assertIn("Provenance", html)
         self.assertNotIn("/mnt" + "/data", html)
 
