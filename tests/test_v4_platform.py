@@ -1,6 +1,7 @@
 import json
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 import pandas as pd
@@ -12,6 +13,7 @@ from fvg_research.preflight import inspect_source
 from fvg_research.run_record import write_run_record
 from fvg_research.stability import reference_atlas
 from research_v2.ablation import run_ablation
+from research_v2.comparison import build_v1_v2_comparison
 from research_v2.hypotheses import register_hypothesis, verify_hypothesis
 from research_v2.placebos import placebo_suite
 from research_v2.power import mde_two_proportion
@@ -52,6 +54,18 @@ class TestV4ResearchPlatform(unittest.TestCase):
         self.assertEqual(result["status"], "PASS")
         self.assertIn("open", [column.lower() for column in result["columns"]])
 
+        with tempfile.TemporaryDirectory() as directory:
+            archive = Path(directory) / "batch.zip"
+            with zipfile.ZipFile(archive, "w") as zf:
+                zf.writestr("sample.csv", fixture.read_text(encoding="utf-8"))
+                zf.writestr(
+                    "sample.symbology.json",
+                    '{"symbols":["MNQH26","MNQM26"],"start":"2026-01-05","end":"2026-01-06"}',
+                )
+            zipped = inspect_source(archive)
+            self.assertEqual(zipped["status"], "PASS")
+            self.assertEqual(zipped["detected_mnq_contracts"], 2)
+
     def test_event_explorer_reads_golden_event(self):
         frame = pd.read_csv(ROOT / "tests" / "fixtures" / "golden_ohlcv.csv")
         frame["ts_event"] = pd.to_datetime(frame["ts_event"], utc=True)
@@ -78,10 +92,14 @@ class TestV4ResearchPlatform(unittest.TestCase):
         placebo = placebo_suite(bars, horizon=15, max_events=40, seed=77)
         self.assertGreaterEqual(len(placebo), 3)
         self.assertIn("Real FVG", placebo["series"].tolist())
+        real_n = int(placebo.loc[placebo["series"].eq("Real FVG"), "N"].iloc[0])
+        matched_n = int(placebo.loc[placebo["series"].eq("State-matched ordinary zone"), "N"].iloc[0])
+        self.assertEqual(real_n, matched_n)
 
         ablation = run_ablation(bars, horizon=15, max_events=40, n_controls=1, seed=77)
         self.assertGreaterEqual(len(ablation), 2)
         self.assertTrue({"Variant", "Difference (pp)"}.issubset(ablation.columns))
+        self.assertEqual(ablation["Parents"].nunique(), 1)
 
     def test_run_record_contains_hashes(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -105,6 +123,26 @@ class TestV4ResearchPlatform(unittest.TestCase):
             self.assertEqual(payload["status"], "success")
             self.assertEqual(len(payload["inputs"][0]["sha256"]), 64)
             self.assertEqual(len(payload["outputs"][0]["sha256"]), 64)
+
+    def test_v1_v2_comparison_uses_correct_published_ce_cell(self):
+        reference = json.loads((ROOT / "reference_results" / "reference_metrics.json").read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory)
+            (out / "ce_reinference.json").write_text(
+                json.dumps({
+                    "cells": [{
+                        "timeframe": "4H",
+                        "depth_band": "45-50%",
+                        "mean_R": 0.250,
+                        "q_mean_R_bh": 0.12,
+                    }]
+                }),
+                encoding="utf-8",
+            )
+            frame = build_v1_v2_comparison(reference, out)
+            row = frame.loc[frame["Question"].eq("4H CE body close 45–50%")].iloc[0]
+            self.assertAlmostEqual(row["Published v1"], 0.286)
+            self.assertAlmostEqual(row["Corrected v2"], 0.250)
 
     def test_reference_stability_atlas_has_core_dimensions(self):
         reference = json.loads((ROOT / "reference_results" / "reference_metrics.json").read_text(encoding="utf-8"))
