@@ -3,7 +3,7 @@
 **Project:** `t8pium/fvg-predictive-strength`  
 **Market:** CME Micro E-mini Nasdaq-100 futures (MNQ)  
 **Study period:** 2020-01-01 through 2026-07-10  
-**Current validated repository state at archive time:** `1cc9d5a7f5cfcd51231bc8d351465bbbc9972431`  
+**Current repository state after 2026-09-21 v5 audit sync:** `39528f2aff3a7d93f55db5ad21ef3ea5ceab5dcf`  
 **Purpose of this file:** preserve the research, engineering decisions, methodological corrections, reproducibility work, platform evolution, and new temporal findings developed through the project chat.
 
 ---
@@ -832,13 +832,15 @@ It is:
 
 ## 17. Reproducibility state
 
-At the time this archive was created:
+At the original 2026-09-20 archive point, the repository had reached 72 tests. After the 2026-09-21 public-Nasdaq v5 expansion and double-check:
 
-- current validated repository commit: `1cc9d5a7f5cfcd51231bc8d351465bbbc9972431`;
+- current main commit after the audit merge: `39528f2aff3a7d93f55db5ad21ef3ea5ceab5dcf`;
+- audited PR head: `c3c64318a23fe9520253ab5c6accf207d5ba9e01`;
 - configured validation passed on Windows Python 3.12, Ubuntu Python 3.11, and Ubuntu Python 3.13;
-- the test suite had reached **72 tests**;
-- the published v1 source remained hash-locked;
-- licensed market data remained excluded from the public repository.
+- the audited test suite reached **80 tests**;
+- the exact post-merge squash SHA was not separately matrix-tested;
+- the published MNQ v1 source remains hash-locked;
+- licensed MNQ data and HistData-derived public-source market files remain excluded from Git history.
 
 ---
 
@@ -922,3 +924,61 @@ The complete body of work ranks the “when does an FVG matter?” variables app
 7. isolated day/week/day-of-month spikes as regime diagnostics only
 
 The machine-readable version of these findings lives in `research_v2/findings/temporal_attraction_reaction_2026-09-20.json`.
+
+
+---
+
+## 20. Research Platform v5 — public Nasdaq long-history replication and audit
+
+On 2026-09-21 the project gained a second, isolated research track using the free HistData **NSX/USD** one-minute source.
+
+Observed merged-source metadata:
+
+- **5,046,180** one-minute rows;
+- **2010-11-14 through 2026-09-11**;
+- fixed EST source clock with no daylight-saving adjustment;
+- zero/unusable centralized exchange volume;
+- Nasdaq-100 index-style quote feed, **not CME NQ/MNQ futures**.
+
+Research Platform v5 adds:
+
+- full source audit;
+- fixed-EST → UTC normalization;
+- Parquet/pickle preparation;
+- DuckDB-backed local candle queries;
+- local 1m/5m/15m/1H/4H FVG visualization;
+- individual reruns of the same nine reader-facing hypothesis families;
+- resume-safe 12-stage public replication;
+- machine-readable summaries;
+- a separate public-track report;
+- strict output separation under `results/public_nsx/`.
+
+The 365 MB merged market file is **not** committed to normal Git history. The project also does not assume a right to redistribute HistData-derived data. Readers obtain the free source and prepare it locally; a GitHub Release installer is only an optional mechanism if redistribution permission is explicitly confirmed.
+
+### v5 double-check findings
+
+A complete source/architecture review after the initial v5 merge found several issues:
+
+1. empty nested timeframe payloads could be falsely counted as completed experiment families;
+2. the generated public report could falsely label such empty payloads as “Local output available”;
+3. a public overview card incorrectly implied the November 2010 dataset covered the dot-com aftermath / 2008 GFC;
+4. reproduction wording overemphasized a Release installer even though local HistData preparation is the supported default;
+5. the preserved CE/body script inherits MNQ-specific **0.25-point minimum-gap and width-unit assumptions**. On NSX/USD those are transferred 0.25-point method units, not exchange ticks;
+6. portfolio copy blurred which temporal/placebo/ablation work belongs to the frozen MNQ research versus the public proxy track.
+
+These issues were corrected in audit PR #19 and merged as:
+
+`39528f2aff3a7d93f55db5ad21ef3ea5ceab5dcf`
+
+The audited PR head passed **80 tests** across Ubuntu Python 3.11, Windows Python 3.12 and Ubuntu Python 3.13.
+
+### Public-track evidence status
+
+The infrastructure is ready, but the complete 5,046,180-row, 12-stage NSX/USD replication has **not yet been completed and reviewed**. Therefore:
+
+- no NSX/USD headline FVG statistic is published yet;
+- MNQ results must not be copied onto the public track;
+- the public “live explorer” means local interactive access after data preparation, not publicly hosted raw market data;
+- futures-specific conclusions still require CME NQ/MNQ evidence.
+
+The next empirical milestone is to run the full public suite, inspect the generated audit/results, and only then compare whether the MNQ pattern—fresh lower-timeframe attraction, rapid decay, and modest first-touch reaction—survives the longer proxy history.
