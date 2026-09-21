@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "t8pium-fvg-research"
-version = "4.0.0"
-description = "Inspectable and reproducible MNQ Fair Value Gap predictive-strength research lab"
+version = "5.0.0"
+description = "Dual-track reproducible FVG research lab: frozen MNQ evidence plus public long-history Nasdaq replication"
 requires-python = ">=3.11,<3.14"
 dependencies = [
   "numpy==2.4.6",

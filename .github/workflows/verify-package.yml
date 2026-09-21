@@ -45,10 +45,18 @@ jobs:
           python scripts/reproduce_full.py --help
           python scripts/benchmark.py --help
           python scripts/generate_static_report.py --help
+          python scripts/prepare_histdata_nsx.py --help
+          python scripts/install_public_nsx.py --help
+          python scripts/package_public_nsx.py --help
+          python scripts/reproduce_public_nsx.py --help
+          python scripts/summarize_public_nsx.py --help
+          python scripts/generate_public_nsx_report.py --help
           python -m research_v2.runner --help
 
-      - name: Generate static report
-        run: python scripts/generate_static_report.py --output site/index.html
+      - name: Generate static reports
+        run: |
+          python scripts/generate_static_report.py --output site/index.html
+          python scripts/generate_public_nsx_report.py --output site/public-nasdaq/index.html
 
       - name: Run synthetic and dashboard tests
         run: python -m unittest discover -s tests -v

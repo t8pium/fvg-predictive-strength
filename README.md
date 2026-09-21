@@ -1,13 +1,26 @@
-# Fair Value Gaps — Predictive Strength (MNQ)
+# Fair Value Gaps — Predictive Strength
 
 [![Verify research package](https://github.com/t8pium/fvg-predictive-strength/actions/workflows/verify-package.yml/badge.svg)](https://github.com/t8pium/fvg-predictive-strength/actions/workflows/verify-package.yml)
 [![Static research report](https://img.shields.io/badge/report-GitHub%20Pages-58a6ff)](https://t8pium.github.io/fvg-predictive-strength/)
 
-**2,303,483 active 1-minute bars · 454,197 detected 1m FVGs · 27 MNQ contracts · 2020–2026 · 9 published experiments**
+**Two research tracks:** frozen CME MNQ evidence (2020–2026) + a reproducible public Nasdaq-100 proxy replication (2010–2026, 5M+ one-minute bars).
 
 > **Research question:** after controlling for distance, volatility, trend, session and ordinary price revisits, does the **FVG label itself** add useful predictive information?
 
 **Published conclusion:** FVGs were revisited frequently, but most of the apparent “magnetism” was shared by comparable ordinary zones. The remaining effect was small, strongest shortly after formation, and inconsistent across longer horizons, timeframes and later data.
+
+## Two-track design
+
+The repository now deliberately separates two evidence tracks:
+
+| Track | Data | Purpose |
+|---|---|---|
+| **Published MNQ study** | CME MNQ, 2020–2026, licensed history | Frozen futures-specific reference evidence |
+| **Public Nasdaq replication** | HistData NSX/USD, late-2010–2026, 5M+ 1m rows | Longer-history replication, live inspection, discovery and robustness |
+
+The public track can be prepared from the free HistData download, explored candle-by-candle in the Research Lab, rerun experiment-by-experiment, or reproduced end-to-end with the same nine reader-facing hypothesis families. It never overwrites the frozen MNQ outputs. A GitHub Release installer is implemented as an optional distribution route, but the repository does not assume redistribution rights for third-party market data.
+
+> **Important:** NSX/USD is an index-style quote feed, not CME NQ/MNQ futures. The public replication is appropriate for price-pattern robustness, not futures volume, contract-roll, exact-tick, slippage or execution claims.
 
 ## Start here
 
@@ -21,7 +34,7 @@
 | Reproduce the study locally | Download ZIP → extract → double-click **START_HERE.bat** |
 | Read the complete project-chat research archive | [Full research & platform archive](docs/CHAT_RESEARCH_ARCHIVE_2026-09-20.md) |
 | Read the temporal attraction/rejection extension | [Temporal attraction & reaction study](docs/TEMPORAL_ATTRACTION_REACTION_STUDY.md) |
-| Use the free long-history Nasdaq-100 proxy dataset | [HistData NSX/USD workflow](docs/HISTDATA_NSX_WORKFLOW.md) |
+| Reproduce everything on free long-history Nasdaq data | **[Public Nasdaq research track](docs/PUBLIC_NASDAQ_RESEARCH.md)** |
 
 ## Study at a glance
 
@@ -169,25 +182,49 @@ start:                 2020-01-01 23:00:00+00:00
 end:                   2026-07-10 20:59:00+00:00
 ~~~
 
-### Free long-history Nasdaq-100 proxy data
+### Public long-history Nasdaq replication
 
-For discovery and cross-market robustness work, the repository can also audit and prepare the free HistData **NSX/USD** 1-minute export:
+The HistData NSX/USD workflow is now a first-class second research track instead of only an external-data adapter.
 
-~~~bash
-python scripts/prepare_histdata_nsx.py --input "C:\\path\\to\\NSXUSD_M1_ALL.csv"
-~~~
-
-The converter handles HistData's fixed-EST timestamp convention correctly, performs a complete structural audit, and writes a separate schema-compatible pickle/Parquet dataset under `data/external/nsxusd/`.
-
-External runs are isolated from the published MNQ outputs:
+Prepare the merged CSV directly:
 
 ~~~bash
-python scripts/run_original.py detailed-1m \
-  --data data/external/nsxusd/active_nsxusd.pkl \
-  --results-root results/external/nsxusd
+python scripts/prepare_histdata_nsx.py \
+  --input "C:\\path\\to\\NSXUSD_M1_ALL.csv" \
+  --output data/public/nsxusd
 ~~~
 
-This source is **not CME futures data**: volume, contract rolls, futures tick assumptions and execution-specific conclusions do not transfer directly. See [HistData NSX/USD workflow](docs/HISTDATA_NSX_WORKFLOW.md).
+If a public dataset Release asset is ever published **after redistribution permission is confirmed**, it can instead be installed with:
+
+~~~bash
+python scripts/install_public_nsx.py
+~~~
+
+Until then, the supported public route is to download the free source from HistData and prepare the merged CSV locally.
+
+Then reproduce the complete experiment family:
+
+~~~bash
+python scripts/reproduce_public_nsx.py
+~~~
+
+The Research Lab adds dedicated pages for:
+
+- public dataset setup and audit;
+- date-range candle browsing with live FVG overlays;
+- individual public experiment reruns;
+- resume-safe full public reproduction;
+- machine-readable public result summaries.
+
+All outputs stay under `results/public_nsx/`. The original MNQ evidence remains frozen.
+
+To build the distributable data asset from the merged CSV:
+
+~~~bash
+python scripts/package_public_nsx.py --input "C:\\path\\to\\NSXUSD_M1_ALL.csv"
+~~~
+
+The roughly 365 MB merged CSV is intentionally **not committed to Git history**. The repository contains tooling to build a Release asset, but do not publish or redistribute HistData-derived market files unless the applicable data terms or explicit permission allow it. See [Public Nasdaq research track](docs/PUBLIC_NASDAQ_RESEARCH.md).
 
 ## Static research report / downloadable artifact
 

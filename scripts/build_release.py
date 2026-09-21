@@ -9,6 +9,8 @@ from pathlib import Path
 from app.catalog import EXPERIMENTS
 from app.provenance import EXPERIMENT_PROVENANCE
 from fvg_research.report import write_report
+from fvg_research.public_report import write_public_report
+from fvg_research.public_summary import build_public_summary
 
 ROOT = Path(__file__).resolve().parents[1]
 DIST = ROOT / "dist"
@@ -44,6 +46,7 @@ def main(argv: list[str] | None = None) -> int:
     DIST.mkdir(parents=True, exist_ok=True)
     archive = DIST / f"fvg-predictive-strength-v{version}.zip"
     report = DIST / f"fvg-predictive-strength-v{version}-report.html"
+    public_report = DIST / f"fvg-predictive-strength-v{version}-public-nasdaq-report.html"
 
     write_report(
         report,
@@ -52,6 +55,7 @@ def main(argv: list[str] | None = None) -> int:
         EXPERIMENT_PROVENANCE,
         ROOT,
     )
+    write_public_report(public_report, build_public_summary(), EXPERIMENTS)
 
     with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
         for path in sorted(ROOT.rglob("*")):
@@ -62,6 +66,7 @@ def main(argv: list[str] | None = None) -> int:
     checksums = {
         archive.name: sha256(archive),
         report.name: sha256(report),
+        public_report.name: sha256(public_report),
     }
     checksum_path = DIST / "SHA256SUMS.json"
     checksum_path.write_text(json.dumps(checksums, indent=2) + "\n", encoding="utf-8")
