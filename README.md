@@ -21,6 +21,7 @@
 | Reproduce the study locally | Download ZIP → extract → double-click **START_HERE.bat** |
 | Read the complete project-chat research archive | [Full research & platform archive](docs/CHAT_RESEARCH_ARCHIVE_2026-09-20.md) |
 | Read the temporal attraction/rejection extension | [Temporal attraction & reaction study](docs/TEMPORAL_ATTRACTION_REACTION_STUDY.md) |
+| Use the free long-history Nasdaq-100 proxy dataset | [HistData NSX/USD workflow](docs/HISTDATA_NSX_WORKFLOW.md) |
 
 ## Study at a glance
 
@@ -167,6 +168,26 @@ missing OHLC:          0
 start:                 2020-01-01 23:00:00+00:00
 end:                   2026-07-10 20:59:00+00:00
 ~~~
+
+### Free long-history Nasdaq-100 proxy data
+
+For discovery and cross-market robustness work, the repository can also audit and prepare the free HistData **NSX/USD** 1-minute export:
+
+~~~bash
+python scripts/prepare_histdata_nsx.py --input "C:\\path\\to\\NSXUSD_M1_ALL.csv"
+~~~
+
+The converter handles HistData's fixed-EST timestamp convention correctly, performs a complete structural audit, and writes a separate schema-compatible pickle/Parquet dataset under `data/external/nsxusd/`.
+
+External runs are isolated from the published MNQ outputs:
+
+~~~bash
+python scripts/run_original.py detailed-1m \
+  --data data/external/nsxusd/active_nsxusd.pkl \
+  --results-root results/external/nsxusd
+~~~
+
+This source is **not CME futures data**: volume, contract rolls, futures tick assumptions and execution-specific conclusions do not transfer directly. See [HistData NSX/USD workflow](docs/HISTDATA_NSX_WORKFLOW.md).
 
 ## Static research report / downloadable artifact
 
