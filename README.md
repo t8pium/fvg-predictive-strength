@@ -18,7 +18,7 @@ The repository now deliberately separates two evidence tracks:
 | **Published MNQ study** | CME MNQ, 2020–2026, licensed history | Frozen futures-specific reference evidence |
 | **Public Nasdaq replication** | HistData NSX/USD, late-2010–2026, 5M+ 1m rows | Longer-history replication, live inspection, discovery and robustness |
 
-The public track can be installed once from a GitHub Release asset, explored candle-by-candle in the Research Lab, rerun experiment-by-experiment, or reproduced end-to-end with the same nine reader-facing hypothesis families. It never overwrites the frozen MNQ outputs.
+The public track can be prepared from the free HistData download, explored candle-by-candle in the Research Lab, rerun experiment-by-experiment, or reproduced end-to-end with the same nine reader-facing hypothesis families. It never overwrites the frozen MNQ outputs. A GitHub Release installer is implemented as an optional distribution route, but the repository does not assume redistribution rights for third-party market data.
 
 > **Important:** NSX/USD is an index-style quote feed, not CME NQ/MNQ futures. The public replication is appropriate for price-pattern robustness, not futures volume, contract-roll, exact-tick, slippage or execution claims.
 
@@ -194,11 +194,13 @@ python scripts/prepare_histdata_nsx.py \
   --output data/public/nsxusd
 ~~~
 
-Or, after the public GitHub Release asset is published:
+If a public dataset Release asset is ever published **after redistribution permission is confirmed**, it can instead be installed with:
 
 ~~~bash
 python scripts/install_public_nsx.py
 ~~~
+
+Until then, the supported public route is to download the free source from HistData and prepare the merged CSV locally.
 
 Then reproduce the complete experiment family:
 
@@ -222,7 +224,7 @@ To build the distributable data asset from the merged CSV:
 python scripts/package_public_nsx.py --input "C:\\path\\to\\NSXUSD_M1_ALL.csv"
 ~~~
 
-GitHub regular repositories block individual files above 100 MiB, so the roughly 365 MB merged CSV is intentionally distributed as a Release asset rather than committed to Git history. See [Public Nasdaq research track](docs/PUBLIC_NASDAQ_RESEARCH.md).
+The roughly 365 MB merged CSV is intentionally **not committed to Git history**. The repository contains tooling to build a Release asset, but do not publish or redistribute HistData-derived market files unless the applicable data terms or explicit permission allow it. See [Public Nasdaq research track](docs/PUBLIC_NASDAQ_RESEARCH.md).
 
 ## Static research report / downloadable artifact
 
