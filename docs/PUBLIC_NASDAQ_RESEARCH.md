@@ -10,12 +10,15 @@ The public track uses a much longer, freely obtainable Nasdaq-100 index-style qu
 
 - source: HistData NSX/USD Generic ASCII M1;
 - merged history observed in the project: 5,046,180 rows;
+- source OHLC: HistData documents Generic ASCII M1 bars as **bid-quote** OHLC, not exchange trades;
 - source clock: fixed EST (UTC-05:00), without daylight-saving adjustment;
 - observed range: 2010-11-14 through 2026-09-11;
 - volume: not usable as centralized exchange volume;
 - no futures contract identifiers or roll boundaries.
 
-The public track therefore answers **price-pattern robustness** questions. It does not create futures-specific evidence about NQ/MNQ execution, exchange volume, contract rolls, slippage or tick mechanics.
+The public track therefore answers **price-pattern robustness** questions. It does not create futures-specific evidence about NQ/MNQ execution, exchange volume, contract rolls, slippage or tick mechanics. The bid-quote construction is another reason to treat it as a robustness proxy rather than a substitute for CME trade data.
+
+HistData's format specification: https://www.histdata.com/f-a-q/data-files-detailed-specification/
 
 > **Current evidence status:** the v5 infrastructure is implemented and cross-platform tested, but the complete 5,046,180-row, 12-stage NSX/USD replication has not yet been completed and reviewed in this repository. Until that happens, the public track has no published NSX/USD conclusion and must not inherit the MNQ headline statistics.
 

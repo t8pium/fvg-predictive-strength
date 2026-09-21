@@ -1,9 +1,10 @@
 # Research Platform Guide
 
-The repository has two layers that should not be confused:
+The repository has three layers that should not be confused:
 
-1. **Published study v1** — frozen evidence and hash-locked canonical analysis.
+1. **Published MNQ study v1** — frozen evidence and hash-locked canonical analysis.
 2. **Research platform** — the UI, demo, full-reproduction orchestration, diagnostics, benchmarking, report generation and corrected v2 research tools around that evidence.
+3. **Public Nasdaq replication track** — a separate NSX/USD 2010–2026 price-history workflow for longer-horizon robustness research. It does not replace the MNQ evidence or create futures-specific claims.
 
 ## Fastest ways to use the project
 
@@ -67,6 +68,27 @@ python scripts/reproduce_full.py
 ```
 
 Use `--force` only when you intentionally want to recompute every stage.
+
+### I want to reproduce the public long-history Nasdaq track
+
+Use the merged free HistData NSX/USD M1 CSV:
+
+```bash
+python scripts/prepare_histdata_nsx.py --input "C:\\path\\to\\NSXUSD_M1_ALL.csv" --output data/public/nsxusd
+python scripts/reproduce_public_nsx.py
+python scripts/generate_public_nsx_report.py
+```
+
+The prepared public dataset is queried locally in the Research Lab. The “live” candle explorer is not a public raw-data website.
+
+Important boundaries:
+
+- NSX/USD is an index-style quote feed, not CME NQ/MNQ futures;
+- HistData documents its Generic ASCII M1 OHLC as bid-quote bars rather than exchange trades;
+- volume is not usable as centralized exchange volume;
+- there are no contract identifiers or futures roll boundaries;
+- the preserved CE/body script carries an MNQ-derived 0.25-point minimum-gap / `width_ticks` convention, which becomes a transferred 0.25-point method unit on NSX/USD rather than an exchange tick;
+- the complete 5,046,180-row public replication is not yet a published result until the full 12-stage run is completed and reviewed.
 
 ## Public static report
 
@@ -191,6 +213,7 @@ results/_runs/                canonical per-suite run manifests
 results/_full_reproduction/   orchestration state + verification
 results/_benchmarks/          machine-specific benchmark output
 results/research_v2/          corrected / extended unpublished research
+results/public_nsx/            public NSX/USD replication outputs
 results/_logs/                child-process logs
 ```
 
@@ -330,3 +353,20 @@ published v1 | corrected v2 | change | reason for correction
 `.github/workflows/release.yml` supports both `v*` tags and manual workflow dispatch.
 
 `scripts/build_release.py` creates a clean ZIP, standalone HTML report and checksum manifest while excluding local data, results, environments and generated site output.
+
+## Research Platform v5 — public long-history replication
+
+Version 5 adds a second first-class dataset path around HistData NSX/USD:
+
+- full CSV audit and fixed-EST → UTC normalization;
+- prepared Parquet/pickle under `data/public/nsxusd/`;
+- DuckDB-backed local date-range queries;
+- local candlestick/FVG exploration;
+- isolated individual experiment reruns;
+- resume-safe 12-stage public reproduction;
+- machine-readable public summary and separate report;
+- explicit data-redistribution boundary.
+
+The v5 double-check found and fixed two presentation/status bugs: empty nested result dictionaries could be mistaken for completed output, and some copy overstated the eras covered by the November 2010 dataset start. It also made the inherited 0.25-point CE convention explicit.
+
+The audited PR state passed **80 tests** on Ubuntu Python 3.11, Windows Python 3.12 and Ubuntu Python 3.13. The current squash merge commit is `39528f2aff3a7d93f55db5ad21ef3ea5ceab5dcf`; the PR head, rather than the post-merge squash SHA, is the state directly exercised by the matrix.
