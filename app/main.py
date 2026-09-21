@@ -59,6 +59,13 @@ from .v4_pages import (
     stability_atlas_page,
     v1_v2_comparison_page,
 )
+from .public_nsx_pages import (
+    public_nsx_experiment_page,
+    public_nsx_explorer_page,
+    public_nsx_overview_page,
+    public_nsx_reproduction_page,
+    public_nsx_setup_page,
+)
 
 REFERENCE = json.loads((ROOT / "reference_results" / "reference_metrics.json").read_text(encoding="utf-8"))
 PROVENANCE = json.loads((ROOT / "reference_results" / "manifest.json").read_text(encoding="utf-8"))
@@ -1346,6 +1353,22 @@ def home_page() -> None:
     glossary()
 
     section_header(
+        "Public long-history replication",
+        "Repeat the same research process on free Nasdaq-100 history",
+        "A separate public track uses HistData NSX/USD from 2010 onward so readers can inspect the underlying candles, run the same experiment families, and reproduce the work without a licensed Databento dataset.",
+    )
+    cols = st.columns(3)
+    with cols[0]:
+        info_card("~16 years", "The public dataset extends the research window back to late 2010.", "5M+ 1m bars")
+    with cols[1]:
+        info_card("Live explorer", "Load any date slice, resample it and overlay mechanically detected FVGs directly on the candles.", "Actual observations")
+    with cols[2]:
+        info_card("9 experiment families", "Run the same falsification sequence while keeping the public proxy results separate from MNQ.", "Replication track")
+    if st.button("Open public Nasdaq replication →", type="primary", width="stretch"):
+        st.session_state["page"] = "Public Nasdaq"
+        st.rerun()
+
+    section_header(
         "Latest extension",
         "When are FVGs most predictive?",
         "A newer temporal study separates attraction from first-touch rejection across year, session, hour, timeframe and FVG age.",
@@ -1503,6 +1526,23 @@ def sidebar() -> None:
         st.session_state["page"] = "Full Reproduction"
         st.rerun()
 
+    st.markdown("**Public Nasdaq replication**")
+    if st.button("Public Nasdaq overview", width="stretch"):
+        st.session_state["page"] = "Public Nasdaq"
+        st.rerun()
+    if st.button("Public data setup", width="stretch"):
+        st.session_state["page"] = "Public Nasdaq Setup"
+        st.rerun()
+    if st.button("Public data explorer", width="stretch"):
+        st.session_state["page"] = "Public Nasdaq Explorer"
+        st.rerun()
+    if st.button("Public experiment lab", width="stretch"):
+        st.session_state["page"] = "Public Nasdaq Experiments"
+        st.rerun()
+    if st.button("Public full replication", width="stretch"):
+        st.session_state["page"] = "Public Nasdaq Reproduction"
+        st.rerun()
+
     st.markdown("**Inspect & export**")
     if st.button("Event explorer", width="stretch"):
         st.session_state["page"] = "Event Explorer"
@@ -1596,6 +1636,16 @@ def main() -> None:
     page = st.session_state["page"]
     if page == "Quick Demo":
         quick_demo_page()
+    elif page == "Public Nasdaq":
+        public_nsx_overview_page()
+    elif page == "Public Nasdaq Setup":
+        public_nsx_setup_page()
+    elif page == "Public Nasdaq Explorer":
+        public_nsx_explorer_page()
+    elif page == "Public Nasdaq Experiments":
+        public_nsx_experiment_page()
+    elif page == "Public Nasdaq Reproduction":
+        public_nsx_reproduction_page()
     elif page == "Data Setup":
         data_page()
     elif page == "Full Reproduction":
