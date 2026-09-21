@@ -1,6 +1,6 @@
 # Public Nasdaq FVG replication — NSX/USD 2010–2026
 
-This track repeats the project's FVG falsification workflow on the free HistData **NSX/USD** one-minute history so the underlying data can be distributed separately from the licensed CME MNQ study and inspected by anyone.
+This track repeats the project's FVG falsification workflow on the free HistData **NSX/USD** one-minute history so readers can reproduce the analysis without the licensed CME MNQ dataset and inspect the underlying observations locally.
 
 ## Why this is a separate research track
 
@@ -21,7 +21,7 @@ The public track therefore answers **price-pattern robustness** questions. It do
 
 The Research Lab now has a parallel public-data workflow:
 
-1. **Public data setup** — install the GitHub Release asset or prepare the merged CSV.
+1. **Public data setup** — prepare the merged HistData CSV locally; an optional GitHub Release installer is available only if redistribution permission is confirmed.
 2. **Full dataset audit** — timestamps, ordering, duplicate bars, OHLC geometry, numeric integrity, gaps, year coverage and volume availability.
 3. **Timezone normalization** — fixed EST is localized to UTC-05:00 and then converted to UTC/New York correctly.
 4. **Live data explorer** — query the Parquet directly with DuckDB, resample 1m/5m/15m/1H/4H and overlay mechanically detected FVGs.
@@ -31,17 +31,24 @@ The Research Lab now has a parallel public-data workflow:
 8. **Public static report** — generated from the public summary.
 9. **MNQ separation** — every output stays under `results/public_nsx/`; frozen MNQ evidence is never overwritten.
 
-## Dataset distribution
+## Dataset distribution and licensing boundary
 
-The merged CSV is about 365 MB, which is too large for a normal Git object. GitHub blocks individual regular-repository files above 100 MiB, so the public history is packaged as a **GitHub Release asset** instead of polluting Git history.
+The merged CSV is about 365 MB, so it is not suitable for ordinary Git history. More importantly, the HistData pages reviewed for this project describe free downloads/backtesting use but did **not** provide an explicit redistribution grant that we could rely on.
 
-Build the release asset from the merged CSV:
+Therefore the repository's default distribution model is:
+
+1. publish the **code, downloader/setup workflow, audit logic, research methods, and generated research outputs**;
+2. let each reader obtain the free HistData source themselves;
+3. prepare the dataset locally with `scripts/prepare_histdata_nsx.py`;
+4. do **not** publicly upload the raw/converted HistData market dataset unless the applicable terms or explicit permission confirm redistribution is allowed.
+
+A packaging utility exists for cases where redistribution permission is confirmed:
 
 ~~~bash
 python scripts/package_public_nsx.py --input "C:\path\to\NSXUSD_M1_ALL.csv"
 ~~~
 
-Output:
+It creates:
 
 ~~~text
 dist/public_nsx/
@@ -55,13 +62,7 @@ dist/public_nsx/
     └── PUBLIC_DATA_MANIFEST.json
 ~~~
 
-Upload `NSXUSD_M1_PUBLIC.zip` to a GitHub Release with that exact filename. The app and installer use:
-
-~~~text
-https://github.com/t8pium/fvg-predictive-strength/releases/latest/download/NSXUSD_M1_PUBLIC.zip
-~~~
-
-The installed pickle is rebuilt locally from Parquet so the release does not need to contain two full copies of the same data.
+If permission is confirmed and that ZIP is attached to a GitHub Release with the expected filename, `scripts/install_public_nsx.py` can verify its SHA-256 inventory and install it automatically. Until then, local source preparation is the supported path.
 
 ## One-click full replication
 
