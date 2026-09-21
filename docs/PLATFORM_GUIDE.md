@@ -84,6 +84,7 @@ The prepared public dataset is queried locally in the Research Lab. The â€œliveâ
 Important boundaries:
 
 - NSX/USD is an index-style quote feed, not CME NQ/MNQ futures;
+- HistData documents its Generic ASCII M1 OHLC as bid-quote bars rather than exchange trades;
 - volume is not usable as centralized exchange volume;
 - there are no contract identifiers or futures roll boundaries;
 - the preserved CE/body script carries an MNQ-derived 0.25-point minimum-gap / `width_ticks` convention, which becomes a transferred 0.25-point method unit on NSX/USD rather than an exchange tick;
