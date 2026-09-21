@@ -27,8 +27,8 @@ def _sha256(path: Path) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Audit/prepare NSXUSD_M1_ALL.csv and build a GitHub Release-ready public dataset ZIP. "
-            "The raw 365MB CSV is intentionally not committed to Git history."
+            "Audit/prepare NSXUSD_M1_ALL.csv and build a candidate dataset ZIP. "
+            "Do not publish the archive unless redistribution permission is confirmed."
         )
     )
     parser.add_argument("--input", required=True, help="Path to NSXUSD_M1_ALL.csv")
@@ -90,7 +90,7 @@ def main(argv: list[str] | None = None) -> int:
         "end_utc": result["end_utc"],
     }, indent=2))
     print()
-    print("Upload NSXUSD_M1_PUBLIC.zip as a GitHub Release asset with this exact filename.")
+    print("Candidate archive built. Do NOT publish it unless the source terms or explicit permission allow redistribution.")
     return 0
 
 
