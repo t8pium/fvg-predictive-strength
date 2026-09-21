@@ -46,8 +46,9 @@ def canonical_source_digest(text: str) -> str:
 
 
 class PathRewriter(ast.NodeTransformer):
-    def __init__(self, data_path: Path) -> None:
+    def __init__(self, data_path: Path, results_root: Path = RESULTS) -> None:
         self.data_path = data_path
+        self.results_root = results_root
         self.replacements = 0
 
     def visit_Constant(self, node: ast.Constant):
@@ -56,11 +57,11 @@ class PathRewriter(ast.NodeTransformer):
         legacy = "/mnt" + "/data"
         replacements = {
             legacy + "/active_mnq.pkl": str(self.data_path),
-            legacy + "/fvg_study_outputs": str(RESULTS / "detailed_1m"),
-            legacy + "/fvg_strength_project_single": str(RESULTS / "multi_tf"),
-            legacy + "/fvg_ce_study": str(RESULTS / "ce_body"),
-            legacy + "/midpoint_year_tf": str(RESULTS / "midpoint" / "midpoint_year_tf"),
-            legacy + "/midpoint_tf": str(RESULTS / "midpoint" / "midpoint_tf"),
+            legacy + "/fvg_study_outputs": str(self.results_root / "detailed_1m"),
+            legacy + "/fvg_strength_project_single": str(self.results_root / "multi_tf"),
+            legacy + "/fvg_ce_study": str(self.results_root / "ce_body"),
+            legacy + "/midpoint_year_tf": str(self.results_root / "midpoint" / "midpoint_year_tf"),
+            legacy + "/midpoint_tf": str(self.results_root / "midpoint" / "midpoint_tf"),
         }
         value = node.value
         for old, new in replacements.items():
@@ -70,10 +71,16 @@ class PathRewriter(ast.NodeTransformer):
         return node
 
 
-def patch_source(text: str, name: str, data_path: Path | None = None) -> str:
+def patch_source(
+    text: str,
+    name: str,
+    data_path: Path | None = None,
+    results_root: Path | None = None,
+) -> str:
     data_path = data_path or current_pickle()
+    results_root = results_root or RESULTS
     tree = ast.parse(text, filename=name)
-    rewriter = PathRewriter(data_path)
+    rewriter = PathRewriter(data_path, results_root)
     tree = rewriter.visit(tree)
     ast.fix_missing_locations(tree)
     legacy = "/mnt" + "/data"
@@ -89,13 +96,13 @@ def patch_source(text: str, name: str, data_path: Path | None = None) -> str:
     return ast.unparse(tree) + "\n"
 
 
-def snapshot_outputs() -> dict[str, int]:
-    if not RESULTS.exists():
+def snapshot_outputs(results_root: Path, runs: Path) -> dict[str, int]:
+    if not results_root.exists():
         return {}
     return {
         str(path.relative_to(ROOT)): path.stat().st_mtime_ns
-        for path in RESULTS.rglob("*")
-        if path.is_file() and RUNS not in path.parents
+        for path in results_root.rglob("*")
+        if path.is_file() and runs not in path.parents
     }
 
 
@@ -104,6 +111,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("study", choices=SCRIPTS)
     parser.add_argument("--tf", type=int, help="Native timeframe for multi-tf or midpoint")
     parser.add_argument("--ce-tfs", help="Comma-separated CE timeframes in minutes")
+    parser.add_argument(
+        "--data",
+        help=(
+            "Optional schema-compatible pickle instead of the active MNQ generation. "
+            "Use this for external discovery datasets such as prepared HistData NSX/USD."
+        ),
+    )
+    parser.add_argument(
+        "--results-root",
+        help=(
+            "Optional result directory under this repository. When --data is supplied and "
+            "this is omitted, results are isolated under results/external/<dataset-stem>."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -128,15 +149,36 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
 
-    data = current_pickle()
+    data = Path(args.data).expanduser().resolve() if args.data else current_pickle()
     if not data.is_file():
-        print("ERROR: No active MNQ dataset is prepared. Use Data Setup first.", file=sys.stderr)
+        if args.data:
+            print(f"ERROR: External dataset pickle not found: {data}", file=sys.stderr)
+        else:
+            print("ERROR: No active MNQ dataset is prepared. Use Data Setup first.", file=sys.stderr)
         return 2
 
-    RESULTS.mkdir(parents=True, exist_ok=True)
-    RUNS.mkdir(parents=True, exist_ok=True)
+    if args.results_root:
+        results_root = Path(args.results_root).expanduser()
+        if not results_root.is_absolute():
+            results_root = ROOT / results_root
+        results_root = results_root.resolve()
+    elif args.data:
+        safe_name = "".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in data.stem)
+        results_root = (RESULTS / "external" / safe_name).resolve()
+    else:
+        results_root = RESULTS.resolve()
+
+    try:
+        results_root.relative_to(ROOT.resolve())
+    except ValueError:
+        print("ERROR: --results-root must remain inside the repository.", file=sys.stderr)
+        return 2
+
+    runs = results_root / "_runs"
+    results_root.mkdir(parents=True, exist_ok=True)
+    runs.mkdir(parents=True, exist_ok=True)
     for folder in ("detailed_1m", "multi_tf", "midpoint", "ce_body"):
-        (RESULTS / folder).mkdir(parents=True, exist_ok=True)
+        (results_root / folder).mkdir(parents=True, exist_ok=True)
 
     source = ORIGINAL / SCRIPTS[args.study]
     source_text = source.read_text(encoding="utf-8")
@@ -149,7 +191,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
     try:
-        code = patch_source(normalized_source(source_text), source.name, data)
+        code = patch_source(normalized_source(source_text), source.name, data, results_root)
     except Exception as exc:
         print(f"ERROR: Could not create portable source: {exc}", file=sys.stderr)
         return 2
@@ -162,7 +204,7 @@ def main(argv: list[str] | None = None) -> int:
         environment["CE_TFS"] = ",".join(map(str, ce_values))
     command_extra = [str(args.tf)] if args.study == "midpoint" else []
 
-    before = snapshot_outputs()
+    before = snapshot_outputs(results_root, runs)
     started = datetime.now(timezone.utc)
     status = "failed"
     exit_code = 1
@@ -177,7 +219,7 @@ def main(argv: list[str] | None = None) -> int:
                 raise subprocess.CalledProcessError(exit_code, process.args)
             if args.study == "ce-body":
                 suffix = "_" + "_".join(map(str, ce_values)) if len(ce_values) < len(VALID_TFS) else ""
-                trade_file = RESULTS / "ce_body" / f"trades{suffix}.pkl"
+                trade_file = results_root / "ce_body" / f"trades{suffix}.pkl"
                 subprocess.run(
                     [
                         sys.executable,
@@ -185,7 +227,7 @@ def main(argv: list[str] | None = None) -> int:
                         "--trade-file",
                         str(trade_file),
                         "--output",
-                        str(RESULTS / "ce_body" / "body_depth_5pct.csv"),
+                        str(results_root / "ce_body" / "body_depth_5pct.csv"),
                     ],
                     check=True,
                     cwd=ROOT,
@@ -199,7 +241,7 @@ def main(argv: list[str] | None = None) -> int:
             exit_code = exc.returncode
 
     finished = datetime.now(timezone.utc)
-    after = snapshot_outputs()
+    after = snapshot_outputs(results_root, runs)
     changed = sorted(path for path, mtime in after.items() if before.get(path) != mtime)
     manifest = {
         "study": args.study,
@@ -211,17 +253,20 @@ def main(argv: list[str] | None = None) -> int:
         "source_sha256": digest,
         "tf": args.tf,
         "ce_tfs": ce_values if args.study == "ce-body" else None,
-        "data_path": str(data.relative_to(ROOT)),
+        "data_path": (
+            str(data.relative_to(ROOT)) if data.is_relative_to(ROOT) else str(data)
+        ),
+        "results_root": str(results_root.relative_to(ROOT)),
         "data_mtime_ns": data.stat().st_mtime_ns,
         "generated_files": changed,
         "error": error,
     }
     run_name = f"{started.strftime('%Y%m%dT%H%M%S')}_{args.study}.json"
     manifest_text = json.dumps(manifest, indent=2)
-    (RUNS / run_name).write_text(manifest_text, encoding="utf-8")
-    (RUNS / f"latest_{args.study}.json").write_text(manifest_text, encoding="utf-8")
+    (runs / run_name).write_text(manifest_text, encoding="utf-8")
+    (runs / f"latest_{args.study}.json").write_text(manifest_text, encoding="utf-8")
     if args.tf is not None:
-        (RUNS / f"latest_{args.study}_tf{args.tf}.json").write_text(manifest_text, encoding="utf-8")
+        (runs / f"latest_{args.study}_tf{args.tf}.json").write_text(manifest_text, encoding="utf-8")
     record = write_run_record(
         ROOT,
         kind=f"canonical-{args.study}" + (f"-tf{args.tf}" if args.tf is not None else ""),
@@ -241,15 +286,15 @@ def main(argv: list[str] | None = None) -> int:
     )
     manifest["run_record"] = str(record.relative_to(ROOT))
     manifest_text = json.dumps(manifest, indent=2)
-    (RUNS / run_name).write_text(manifest_text, encoding="utf-8")
-    (RUNS / f"latest_{args.study}.json").write_text(manifest_text, encoding="utf-8")
+    (runs / run_name).write_text(manifest_text, encoding="utf-8")
+    (runs / f"latest_{args.study}.json").write_text(manifest_text, encoding="utf-8")
     if args.tf is not None:
-        (RUNS / f"latest_{args.study}_tf{args.tf}.json").write_text(manifest_text, encoding="utf-8")
+        (runs / f"latest_{args.study}_tf{args.tf}.json").write_text(manifest_text, encoding="utf-8")
 
     if status != "success":
         print(f"ERROR: Canonical experiment failed: {error}", file=sys.stderr)
     else:
-        print(f"Run manifest: {RUNS / run_name}")
+        print(f"Run manifest: {runs / run_name}")
         print(f"Run provenance capsule: {record}")
     return exit_code
 
