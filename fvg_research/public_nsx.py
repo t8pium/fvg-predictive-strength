@@ -102,6 +102,19 @@ def install_public_release(
         _safe_extract(temp, destination)
     finally:
         temp.unlink(missing_ok=True)
+
+    release_manifest_path = destination / "PUBLIC_DATA_MANIFEST.json"
+    if not release_manifest_path.is_file():
+        raise ValueError("Public dataset archive is missing PUBLIC_DATA_MANIFEST.json.")
+    release_manifest = json.loads(release_manifest_path.read_text(encoding="utf-8"))
+    for item in release_manifest.get("files", []):
+        path = destination / str(item["name"])
+        if not path.is_file():
+            raise ValueError(f"Public dataset archive is missing {path.name}.")
+        expected = str(item.get("sha256", ""))
+        if expected and sha256(path) != expected:
+            raise ValueError(f"SHA-256 verification failed for {path.name}.")
+
     ensure_pickle()
     manifest = public_manifest()
     if not manifest:
