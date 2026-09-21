@@ -56,7 +56,7 @@ def _dataset_status_cards() -> None:
     if not public_ready():
         callout(
             "Public dataset not installed yet",
-            "The code path is ready. Install the GitHub Release asset or point the lab at NSXUSD_M1_ALL.csv once; after that every public-replication page uses the local Parquet/pickle directly.",
+            "The code path is ready. Prepare NSXUSD_M1_ALL.csv locally once; after that every public-replication page uses the local Parquet/pickle directly. Release-asset installation is only an optional route if redistribution permission is confirmed.",
             kind="warning",
         )
         return
@@ -104,7 +104,7 @@ def public_nsx_setup_page() -> None:
     hero(
         "Free long-history replication",
         "Public Nasdaq dataset",
-        "Install or prepare the 2010–2026 HistData NSX/USD 1-minute history once. The Research Lab then uses it as a first-class public replication dataset.",
+        "Prepare the 2010–2026 HistData NSX/USD 1-minute history once. The Research Lab then uses it as a first-class public replication dataset.",
         ["5M+ 1m bars", "2010–2026", "Free source", "No Databento required"],
     )
     callout(
@@ -121,9 +121,9 @@ def public_nsx_setup_page() -> None:
             st.json(audit)
 
     section_header(
-        "Option A",
-        "Install the GitHub Release dataset",
-        "Once the public-data release asset is uploaded, this becomes the one-click route for every user.",
+        "Optional distribution route",
+        "Install a verified GitHub Release dataset",
+        "Use this only if a dataset asset has been published after redistribution permission was confirmed. The repository does not assume third-party market-data redistribution rights.",
     )
     st.code(PUBLIC_ASSET_URL, language="text")
     if st.button("Download + install public dataset", type="primary", width="stretch"):
@@ -147,8 +147,8 @@ def public_nsx_setup_page() -> None:
             st.code(st.session_state["public_install_log"], language="text")
 
     section_header(
-        "Option B",
-        "Prepare the CSV you already downloaded",
+        "Recommended route",
+        "Prepare the CSV you downloaded from HistData",
         "This performs the full audit, fixes the source's fixed-EST clock correctly, and writes Parquet + schema-compatible pickle files.",
     )
 
@@ -554,7 +554,7 @@ def public_nsx_overview_page() -> None:
         "A reader can install the dataset once, inspect individual observations, run one experiment, or reproduce the entire suite.",
     )
     flow = [
-        ("1 · Install", "GitHub Release asset or your merged HistData CSV."),
+        ("1 · Prepare", "Use your merged HistData CSV; a Release asset is optional only when redistribution is permitted."),
         ("2 · Audit", "Full timestamp/OHLC integrity scan and fixed-EST → UTC normalization."),
         ("3 · Explore", "Interactive candlesticks + mechanically detected FVG zones."),
         ("4 · Reproduce", "Run the same nine experiment families and inspect output tables immediately."),
