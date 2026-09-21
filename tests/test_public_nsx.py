@@ -8,6 +8,7 @@ import pandas as pd
 
 from fvg_research.public_nsx import package_inventory, resample_ohlcv
 from fvg_research.public_report import build_public_report
+from fvg_research.public_summary import build_public_summary
 
 
 class PublicNsxTests(unittest.TestCase):
@@ -62,6 +63,32 @@ class PublicNsxTests(unittest.TestCase):
         self.assertIn("Public Nasdaq FVG Replication", html)
         self.assertIn("5,046,180", html)
         self.assertIn("Run locally to populate", html)
+        self.assertIn("prepare_histdata_nsx.py", html)
+        self.assertIn("optional route", html)
+
+    def test_empty_nested_timeframe_payloads_do_not_count_as_outputs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            summary = build_public_summary(Path(tmp))
+        self.assertEqual(summary["experiment_families_with_outputs"], 0)
+
+    def test_public_report_does_not_mark_empty_nested_payload_as_available(self):
+        experiments = {
+            "matched_attraction": {
+                "num": "02",
+                "title": "Matched Attraction",
+                "question": "Question?",
+            }
+        }
+        html = build_public_report(
+            {
+                "dataset": {},
+                "experiments": {"matched_attraction": {"1": [], "5": [], "15": [], "60": [], "240": []}},
+                "experiment_families_with_outputs": 0,
+            },
+            experiments,
+        )
+        self.assertIn("Run locally to populate", html)
+        self.assertNotIn("Local output available", html)
 
 
 if __name__ == "__main__":
