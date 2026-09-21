@@ -174,6 +174,13 @@ def main(argv: list[str] | None = None) -> int:
         print("ERROR: --results-root must remain inside the repository.", file=sys.stderr)
         return 2
 
+    dataset_mode = "external" if args.data else "active_mnq"
+    if args.data:
+        print(
+            "WARNING: running hash-locked canonical calculations on an external schema-compatible dataset. "
+            "Interpret results as discovery/robustness evidence, not as the published MNQ study."
+        )
+
     runs = results_root / "_runs"
     results_root.mkdir(parents=True, exist_ok=True)
     runs.mkdir(parents=True, exist_ok=True)
@@ -257,6 +264,7 @@ def main(argv: list[str] | None = None) -> int:
             str(data.relative_to(ROOT)) if data.is_relative_to(ROOT) else str(data)
         ),
         "results_root": str(results_root.relative_to(ROOT)),
+        "dataset_mode": dataset_mode,
         "data_mtime_ns": data.stat().st_mtime_ns,
         "generated_files": changed,
         "error": error,
@@ -269,7 +277,10 @@ def main(argv: list[str] | None = None) -> int:
         (runs / f"latest_{args.study}_tf{args.tf}.json").write_text(manifest_text, encoding="utf-8")
     record = write_run_record(
         ROOT,
-        kind=f"canonical-{args.study}" + (f"-tf{args.tf}" if args.tf is not None else ""),
+        kind=(
+            f"canonical-{'external-' if args.data else ''}{args.study}"
+            + (f"-tf{args.tf}" if args.tf is not None else "")
+        ),
         command=[sys.executable, str(ROOT / "scripts" / "run_original.py"), *sys.argv[1:]],
         status=status,
         started_unix=started.timestamp(),
@@ -281,6 +292,8 @@ def main(argv: list[str] | None = None) -> int:
             "tf": args.tf,
             "ce_tfs": ce_values if args.study == "ce-body" else None,
             "exit_code": exit_code,
+            "dataset_mode": dataset_mode,
+            "results_root": str(results_root.relative_to(ROOT)),
             "error": error,
         },
     )
