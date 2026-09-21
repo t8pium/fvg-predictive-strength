@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import html
-import json
 from pathlib import Path
 
 
@@ -13,13 +12,21 @@ def _fmt(value, suffix=""):
     return f"{value}{suffix}"
 
 
+def _has_real_output(value) -> bool:
+    if isinstance(value, dict):
+        return any(_has_real_output(item) for item in value.values())
+    if isinstance(value, (list, tuple)):
+        return bool(value) and any(_has_real_output(item) for item in value)
+    return value is not None and value != ""
+
+
 def build_public_report(summary: dict, experiments: dict) -> str:
     dataset = summary.get("dataset", {})
     raw = summary.get("experiments", {}).get("raw_fill", {}).get("summary", {})
     experiment_cards = []
     for exp_id, meta in experiments.items():
         payload = summary.get("experiments", {}).get(exp_id, {})
-        has_output = bool(payload) and json.dumps(payload, default=str) not in ("{}", "[]")
+        has_output = _has_real_output(payload)
         status = "Local output available" if has_output else "Run locally to populate"
         experiment_cards.append(
             f"""<article class="card">
@@ -46,8 +53,8 @@ def build_public_report(summary: dict, experiments: dict) -> str:
 <section class="hero">
 <div class="eyebrow">Public long-history replication</div>
 <h1>FVG Predictive Strength · Nasdaq 2010–2026</h1>
-<p>A fully accessible companion to the licensed MNQ study. The public track repeats the same FVG falsification sequence on HistData NSX/USD, a Nasdaq-100 index-style quote feed.</p>
-<div class="callout"><strong>Boundary:</strong> this is not CME NQ/MNQ futures data. Price-pattern replication is in scope; futures volume, rolls, exact ticks, slippage and execution claims are not.</div>
+<p>A free-source companion to the licensed MNQ study. The public track repeats the same FVG falsification sequence on HistData NSX/USD, a Nasdaq-100 index-style quote feed.</p>
+<div class="callout"><strong>Boundary:</strong> this is not CME NQ/MNQ futures data. Price-pattern replication is in scope; futures volume, rolls, exact ticks, slippage and execution claims are not. The preserved CE/body code also carries a 0.25-point MNQ-derived minimum-gap/tick-unit convention, so those public-track fields must be interpreted as 0.25-point units rather than NSX/USD exchange ticks.</div>
 </section>
 
 <h2>Dataset</h2>
@@ -69,11 +76,12 @@ def build_public_report(summary: dict, experiments: dict) -> str:
 
 <h2>Reproduce</h2>
 <div class="callout">
-<p>Install the public release dataset, then run:</p>
-<pre><code>python scripts/install_public_nsx.py
+<p>Prepare the free HistData CSV locally, then run the replication:</p>
+<pre><code>python scripts/prepare_histdata_nsx.py --input "C:\\path\\to\\NSXUSD_M1_ALL.csv" --output data/public/nsxusd
 python scripts/reproduce_public_nsx.py
 python scripts/generate_public_nsx_report.py</code></pre>
-<p>The interactive Research Lab also exposes the raw candles, FVG overlays, individual experiment reruns and the complete cached replication workflow.</p>
+<p><code>scripts/install_public_nsx.py</code> is only an optional route if a permitted GitHub Release data asset is published later. The repository does not assume redistribution rights for the HistData-derived market files.</p>
+<p>The interactive Research Lab exposes local raw candles, FVG overlays, individual experiment reruns and the complete cached replication workflow after the dataset has been prepared on that machine.</p>
 </div>
 </main>
 </body>

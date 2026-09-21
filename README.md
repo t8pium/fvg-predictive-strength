@@ -18,9 +18,9 @@ The repository now deliberately separates two evidence tracks:
 | **Published MNQ study** | CME MNQ, 2020–2026, licensed history | Frozen futures-specific reference evidence |
 | **Public Nasdaq replication** | HistData NSX/USD, late-2010–2026, 5M+ 1m rows | Longer-history replication, live inspection, discovery and robustness |
 
-The public track can be prepared from the free HistData download, explored candle-by-candle in the Research Lab, rerun experiment-by-experiment, or reproduced end-to-end with the same nine reader-facing hypothesis families. It never overwrites the frozen MNQ outputs. A GitHub Release installer is implemented as an optional distribution route, but the repository does not assume redistribution rights for third-party market data.
+The public track can be prepared from the free HistData download, explored candle-by-candle **locally** in the Research Lab, rerun experiment-by-experiment, or reproduced end-to-end with the same nine reader-facing hypothesis families. It never overwrites the frozen MNQ outputs. A GitHub Release installer is implemented as an optional distribution route, but the repository does not assume redistribution rights for third-party market data. The complete 5,046,180-row public replication has not yet been completed and reviewed, so no NSX/USD headline result is published yet.
 
-> **Important:** NSX/USD is an index-style quote feed, not CME NQ/MNQ futures. The public replication is appropriate for price-pattern robustness, not futures volume, contract-roll, exact-tick, slippage or execution claims.
+> **Important:** NSX/USD is an index-style quote feed, not CME NQ/MNQ futures. The public replication is appropriate for price-pattern robustness, not futures volume, contract-roll, exact-tick, slippage or execution claims. The preserved CE/body script also inherits MNQ's 0.25-point minimum-gap / `width_ticks` convention; on NSX/USD those fields are transferred 0.25-point method units, not exchange ticks.
 
 ## Start here
 

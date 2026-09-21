@@ -17,6 +17,8 @@ The public track uses a much longer, freely obtainable Nasdaq-100 index-style qu
 
 The public track therefore answers **price-pattern robustness** questions. It does not create futures-specific evidence about NQ/MNQ execution, exchange volume, contract rolls, slippage or tick mechanics.
 
+> **Current evidence status:** the v5 infrastructure is implemented and cross-platform tested, but the complete 5,046,180-row, 12-stage NSX/USD replication has not yet been completed and reviewed in this repository. Until that happens, the public track has no published NSX/USD conclusion and must not inherit the MNQ headline statistics.
+
 ## What has been recreated
 
 The Research Lab now has a parallel public-data workflow:
@@ -24,7 +26,7 @@ The Research Lab now has a parallel public-data workflow:
 1. **Public data setup** — prepare the merged HistData CSV locally; an optional GitHub Release installer is available only if redistribution permission is confirmed.
 2. **Full dataset audit** — timestamps, ordering, duplicate bars, OHLC geometry, numeric integrity, gaps, year coverage and volume availability.
 3. **Timezone normalization** — fixed EST is localized to UTC-05:00 and then converted to UTC/New York correctly.
-4. **Live data explorer** — query the Parquet directly with DuckDB, resample 1m/5m/15m/1H/4H and overlay mechanically detected FVGs.
+4. **Local live data explorer** — after the reader prepares the dataset on their machine, query the Parquet directly with DuckDB, resample 1m/5m/15m/1H/4H and overlay mechanically detected FVGs. This is not a publicly hosted raw-data browser.
 5. **Public experiment lab** — rerun any of the nine reader-facing experiment families on NSX/USD and inspect its CSV/JSON outputs immediately.
 6. **Full public reproduction** — a resume-safe 12-stage orchestrator repeats the same four preserved computational suites across the published timeframes.
 7. **Machine-readable summary** — generated from the actual public-run outputs rather than manually typed statistics.

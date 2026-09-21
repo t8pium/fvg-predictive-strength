@@ -31,6 +31,15 @@ def _records(frame: pd.DataFrame) -> list[dict[str, Any]]:
     return clean.to_dict(orient="records")
 
 
+def _has_real_output(value: Any) -> bool:
+    """Return True only when a nested result payload contains an actual value/record."""
+    if isinstance(value, dict):
+        return any(_has_real_output(item) for item in value.values())
+    if isinstance(value, (list, tuple)):
+        return bool(value) and any(_has_real_output(item) for item in value)
+    return value is not None and value != ""
+
+
 def build_public_summary(results_root: str | Path = PUBLIC_RESULTS) -> dict[str, Any]:
     root = Path(results_root)
     detailed = root / "detailed_1m"
@@ -102,11 +111,8 @@ def build_public_summary(results_root: str | Path = PUBLIC_RESULTS) -> dict[str,
     present = 0
     total = 9
     for payload in result["experiments"].values():
-        if payload:
-            # Nested empty structures count only when at least one record/value exists.
-            text = json.dumps(payload, default=str)
-            if text not in ("{}", "[]") and any(ch.isdigit() for ch in text):
-                present += 1
+        if _has_real_output(payload):
+            present += 1
     result["experiment_families_with_outputs"] = present
     result["experiment_families_total"] = total
     return result

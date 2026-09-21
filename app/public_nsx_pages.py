@@ -122,11 +122,11 @@ def public_nsx_setup_page() -> None:
 
     section_header(
         "Optional distribution route",
-        "Install a verified GitHub Release dataset",
-        "Use this only if a dataset asset has been published after redistribution permission was confirmed. The repository does not assume third-party market-data redistribution rights.",
+        "Optional permitted Release installer",
+        "Use this only if a dataset asset is explicitly published after redistribution permission is confirmed. No public data asset is assumed to exist; local CSV preparation below is the supported default.",
     )
     st.code(PUBLIC_ASSET_URL, language="text")
-    if st.button("Download + install public dataset", type="primary", width="stretch"):
+    if st.button("Try permitted Release installer", width="stretch"):
         live = st.empty()
         rc, log = run_process(
             [str(ROOT / "scripts" / "install_public_nsx.py")],
@@ -398,6 +398,12 @@ def public_nsx_experiment_page() -> None:
     st.caption(" · ".join(EXPERIMENT_TAGS[exp_id]))
     st.write(exp["question"])
     callout("Original experiment logic", exp["summary"])
+    if exp_id == "body_acceptance":
+        callout(
+            "Transferred tick convention",
+            "The preserved CE/body script contains MNQ-specific 0.25-point assumptions (minimum gap and width_ticks). On NSX/USD, read these as transferred 0.25-point method units—not as exchange ticks. This stage is useful for method robustness, not exact-tick execution claims.",
+            kind="warning",
+        )
 
     runner = exp["runner"]
     tf = 1
@@ -540,7 +546,7 @@ def public_nsx_overview_page() -> None:
 
     cols = st.columns(4)
     with cols[0]:
-        info_card("Longer history", "Dot-com aftermath, GFC era, QE, low-volatility, COVID, tightening and the AI-led regime all fit inside one accessible series.")
+        info_card("Longer history", "Post-GFC/QE markets, the low-volatility 2010s, COVID, tightening and the AI-led regime all fit inside one accessible series.")
     with cols[1]:
         info_card("Same questions", "Raw fill, matched attraction, age decay, continuation, retest reaction, midpoint/CE, body acceptance, controls and chronology.")
     with cols[2]:
