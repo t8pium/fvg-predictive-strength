@@ -937,7 +937,8 @@ Observed merged-source metadata:
 - **5,046,180** one-minute rows;
 - **2010-11-14 through 2026-09-11**;
 - fixed EST source clock with no daylight-saving adjustment;
-- zero/unusable centralized exchange volume;
+- Generic ASCII M1 OHLC documented by HistData as **bid-quote bars**;
+- volume is not usable as centralized exchange volume;
 - Nasdaq-100 index-style quote feed, **not CME NQ/MNQ futures**.
 
 Research Platform v5 adds:
